@@ -139,7 +139,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                               icon: const Icon(Icons.copy),
                               onPressed: () {
                                 Clipboard.setData(ClipboardData(text: widget.partyCode));
-                                ToastHelper.showSuccess('Game code copied to clipboard!');
+                                SnackBarHelper.showSuccess(context, 'Game code copied to clipboard!');
                               },
                             ),
                             IconButton(

@@ -198,10 +198,10 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                     ),
                     onPressed: _isButtonEnabled ? () async {
                       // Show success feedback
-                      ToastHelper.showSuccess("Game '${_partyCodeController.text}' created successfully!");
+                      SnackBarHelper.showSuccess(context, "Game '${_partyCodeController.text}' created successfully!");
                       
-                      // Wait a moment for the toast, then navigate
-                      await Future.delayed(const Duration(milliseconds: 500));
+                      // Wait a moment for the snackbar, then navigate
+                      await Future.delayed(const Duration(milliseconds: 1000));
                       
                       if (context.mounted) {
                         Navigator.of(context).pushReplacement(

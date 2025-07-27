@@ -191,10 +191,10 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     ),
                     onPressed: _isButtonEnabled ? () async {
                       // Show success feedback
-                      ToastHelper.showSuccess("Successfully joined game '${_partyCodeController.text}'!");
+                      SnackBarHelper.showSuccess(context, "Successfully joined game '${_partyCodeController.text}'!");
                       
-                      // Wait a moment for the toast, then navigate
-                      await Future.delayed(const Duration(milliseconds: 500));
+                      // Wait a moment for the snackbar, then navigate
+                      await Future.delayed(const Duration(milliseconds: 1000));
                       
                       if (context.mounted) {
                         Navigator.of(context).pushReplacement(

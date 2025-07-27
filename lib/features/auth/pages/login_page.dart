@@ -23,18 +23,18 @@ class _SignInPageState extends State<SignInPage> {
 
     // Validation
     if (email.isEmpty || password.isEmpty) {
-      ToastHelper.showWarning("Please enter both email and password");
+      SnackBarHelper.showWarning(context, "Please enter both email and password");
       return;
     }
 
     try {
       await authService.signInWithEmailPassword(email, password);
       if (mounted) {
-        ToastHelper.showSuccess("Welcome back, hunter!");
+        SnackBarHelper.showSuccess(context, "Welcome back, hunter!");
       }
     } catch (e) {
       if (mounted) {
-        ToastHelper.showError("Login failed: $e");
+        SnackBarHelper.showError(context, "Login failed: $e");
       }
     }
   }

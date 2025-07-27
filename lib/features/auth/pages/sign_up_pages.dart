@@ -28,28 +28,28 @@ class _SignUpPageState extends State<SignUpPage> {
 
     // Validation
     if (email.isEmpty || password.isEmpty || nickname.isEmpty) {
-      ToastHelper.showWarning("Please fill in all fields");
+      SnackBarHelper.showWarning(context, "Please fill in all fields");
       return;
     }
 
     if (verificationPassword != password) {
-      ToastHelper.showError("Passwords do not match!");
+      SnackBarHelper.showError(context, "Passwords do not match!");
       return;
     }
 
     if (password.length < 6) {
-      ToastHelper.showWarning("Password must be at least 6 characters");
+      SnackBarHelper.showWarning(context, "Password must be at least 6 characters");
       return;
     }
 
     try {
       await authService.signUpWithEmailPassword(email, password, nickname);
       if (mounted) {
-        ToastHelper.showSuccess("Account created successfully! Welcome to the hunt!");
+        SnackBarHelper.showSuccess(context, "Account created successfully! Welcome to the hunt!");
       }
     } catch (e) {
       if (mounted) {
-        ToastHelper.showError("Error creating account: $e");
+        SnackBarHelper.showError(context, "Error creating account: $e");
       }
     }
   }
