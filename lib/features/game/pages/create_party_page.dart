@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:lurkers/pages/party_lobby_page.dart';
+import 'package:english_words/english_words.dart';
+import 'package:lurkers/features/game/pages/party_lobby_page.dart';
 
-class JoinPartyScreen extends StatefulWidget {
-  const JoinPartyScreen({super.key});
+class CreatePartyScreen extends StatefulWidget {
+  const CreatePartyScreen({super.key});
 
   @override
-  State<JoinPartyScreen> createState() => _JoinPartyScreenState();
+  State<CreatePartyScreen> createState() => _CreatePartyScreenState();
 }
 
-class _JoinPartyScreenState extends State<JoinPartyScreen> {
+class _CreatePartyScreenState extends State<CreatePartyScreen> {
   // --- NESSUNA MODIFICA ALLA LOGICA DI STATO ---
-  final TextEditingController _partyCodeController = TextEditingController();
+  late final TextEditingController _partyCodeController;
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _placeController = TextEditingController();
   final TextEditingController _objectController = TextEditingController();
 
+  bool _isPartyCodeLocked = false;
   bool _isButtonEnabled = false;
 
   bool get _isFormValid =>
-      _partyCodeController.text.isNotEmpty &&
-      _partyCodeController.text.contains('-') &&
-      _partyCodeController.text.length >= 5 &&
+      _isPartyCodeLocked &&
       _nicknameController.text.isNotEmpty &&
       _placeController.text.isNotEmpty &&
       _objectController.text.isNotEmpty;
@@ -28,6 +28,9 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
   @override
   void initState() {
     super.initState();
+    final wordPair = generateWordPairs().first;
+    final randomCode = '${wordPair.first}-${wordPair.second}'.toLowerCase();
+    _partyCodeController = TextEditingController(text: randomCode);
 
     _partyCodeController.addListener(_validateForm);
     _nicknameController.addListener(_validateForm);
@@ -55,7 +58,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Join Game'),
+        title: const Text('Create New Game'),
         elevation: 0,
         centerTitle: true,
       ),
@@ -78,7 +81,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    children: [ 
+                    children: [
               Expanded(
                 child: ListView(
                   children: <Widget>[
@@ -86,7 +89,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     
                     // Informational card
                     Card(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       child: const Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Column(
@@ -94,10 +97,10 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.group_add),
+                                Icon(Icons.info_outline),
                                 SizedBox(width: 8),
                                 Text(
-                                  'Join the Hunt',
+                                  'Game Setup',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -107,7 +110,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Enter the game code shared by your host and prepare for the assassination game.',
+                              'Create a unique game code and set up the assassination scenario. Other players will use this code to join your game.',
                               style: TextStyle(fontSize: 14),
                             ),
                           ],
@@ -120,22 +123,35 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     // Party Code Field
                     TextField(
                       controller: _partyCodeController,
-                      decoration: const InputDecoration(
+                      enabled: !_isPartyCodeLocked, 
+                      decoration: InputDecoration(
                         labelText: 'Game Code',
-                        helperText: 'Enter the code provided by your game host',
-                        hintText: 'e.g., word-word',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.key),
+                        helperText: _isPartyCodeLocked 
+                          ? 'Game code is locked and ready to share' 
+                          : 'Tap the lock to finalize your game code',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.tag),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPartyCodeLocked ? Icons.lock : Icons.lock_open,
+                            color: _isPartyCodeLocked ? Colors.green : Colors.orange,
+                          ),
+                          tooltip: _isPartyCodeLocked ? 'Unlock to edit' : 'Lock to confirm',
+                          onPressed: () {
+                            setState(() {
+                              _isPartyCodeLocked = !_isPartyCodeLocked;
+                              _validateForm();
+                            });
+                          },
+                        ),
                       ),
-                      textCapitalization: TextCapitalization.none,
-                      autocorrect: false,
                     ),
                     
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
                     // Player Info Section
                     Text(
-                      'Your Player Identity',
+                      'Your Player Information',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -147,7 +163,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                       controller: _nicknameController,
                       decoration: const InputDecoration(
                         labelText: "Your Nickname",
-                        helperText: "How other players will identify you",
+                        helperText: "How other players will see you",
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.person),
                       ),
@@ -156,20 +172,11 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
 
                     const SizedBox(height: 20),
                     
-                    // Character Background Section
+                    // Game Setup Section
                     Text(
-                      'Your Starting Resources',
+                      'Assassination Scenario',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 8),
-                    
-                    Text(
-                      'Choose your starting location and object for the assassination game.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
                       ),
                     ),
                     
@@ -178,8 +185,8 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     TextField(
                       controller: _placeController,
                       decoration: const InputDecoration(
-                        labelText: "Your Starting Location",
-                        helperText: "Where will you begin the game?",
+                        labelText: "Target Location",
+                        helperText: "Where will the assassinations take place?",
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.location_on),
                       ),
@@ -191,8 +198,8 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     TextField(
                       controller: _objectController,
                       decoration: const InputDecoration(
-                        labelText: "Your Starting Object",
-                        helperText: "What object do you possess at the start?",
+                        labelText: "Required Object",
+                        helperText: "What object must the target possess to be eliminated?",
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.inventory),
                       ),
@@ -209,8 +216,8 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    icon: const Icon(Icons.login),
-                    label: const Text("Join the Hunt"),
+                    icon: const Icon(Icons.rocket_launch),
+                    label: const Text("Launch Game"),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -223,7 +230,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                             children: [
                               const Icon(Icons.check_circle, color: Colors.white),
                               const SizedBox(width: 8),
-                              Text("Successfully joined game '${_partyCodeController.text}'!"),
+                              Text("Game '${_partyCodeController.text}' created successfully!"),
                             ],
                           ),
                           backgroundColor: Colors.green,
@@ -242,7 +249,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                               nickname: _nicknameController.text,
                               location: _placeController.text,
                               evidence: _objectController.text,
-                              isHost: false, // Chi si unisce non è l'host
+                              isHost: true, // Chi crea la party è sempre l'host
                             ),
                           ),
                         );

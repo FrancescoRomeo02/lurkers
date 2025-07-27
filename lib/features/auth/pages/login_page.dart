@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lurkers/auth/auth_service.dart';
-import 'package:lurkers/pages/sign_up_pages.dart';
+import 'package:lurkers/features/auth/services/auth_service.dart';
+import 'package:lurkers/features/auth/pages/sign_up_pages.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});

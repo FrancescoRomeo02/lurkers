@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lurkers/auth/auth_service.dart';
-import 'package:lurkers/pages/login_page.dart';
+import 'package:lurkers/features/auth/services/auth_service.dart';
+import 'package:lurkers/features/auth/pages/login_page.dart';
 
 
 class SignUpPage extends StatefulWidget {

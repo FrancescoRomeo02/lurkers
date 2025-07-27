@@ -1,7 +1,7 @@
 // main.dart
 
 import 'package:flutter/material.dart';
-import 'package:lurkers/auth/auth_gate.dart';
+import 'package:lurkers/features/auth/auth_gate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';

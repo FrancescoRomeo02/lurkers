@@ -1,8 +1,8 @@
 // home_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:lurkers/pages/create_party_page.dart';
-import 'package:lurkers/pages/join_party_page.dart';
+import 'package:lurkers/features/game/pages/create_party_page.dart';
+import 'package:lurkers/features/game/pages/join_party_page.dart';
 
 // La schermata JoinParty andrà creata in seguito
 // class JoinPartyScreen extends StatelessWidget { ... } 
