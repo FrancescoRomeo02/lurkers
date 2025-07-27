@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lurkers/auth/auth_gate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 
 Future<void> main() async {
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // 1. Usiamo MaterialApp come radice
     return MaterialApp(
-      title: 'Lurkers Party Game',
+      title: 'Lurkers - Assassination Game',
       
       // Flutter genererà una palette completa da questo colore.
       theme: ThemeData(
@@ -40,6 +41,9 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true, // Abilita le feature moderne di Material Design 3
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData.light().textTheme,
+        ),
       ),
 
       darkTheme: ThemeData(
@@ -48,6 +52,9 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData.dark().textTheme,
+        ),
       ),
 
       // 4. Decidi quale tema usare (o lascialo decidere al sistema)
