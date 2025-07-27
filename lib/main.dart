@@ -1,26 +1,59 @@
-import 'package:flutter/cupertino.dart';
-import 'package:lurkers/pages/home_page.dart';
+// main.dart
+
+import 'package:flutter/material.dart';
+import 'package:lurkers/auth/auth_gate.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  try {
+    await dotenv.load(fileName: ".env");
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL'] ?? 'none',
+      anonKey: dotenv.env['ANON_KEY'] ?? 'none',
+    );
+  } catch (e) {
+        throw Exception('Error loading .env file: $e'); 
+  }
+
   runApp(const MyApp());
 }
+
+final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 1. Usiamo CupertinoApp come radice
-    return const CupertinoApp(
+    // 1. Usiamo MaterialApp come radice
+    return MaterialApp(
       title: 'Lurkers Party Game',
-      // 2. Il tema viene gestito da CupertinoThemeData
-      theme: CupertinoThemeData(
-        brightness: Brightness.light, // Puoi definire tema chiaro/scuro
-        primaryColor: CupertinoColors.systemRed, // Colore principale (per bottoni, link...)
+      
+      // Flutter genererà una palette completa da questo colore.
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF005B41),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true, // Abilita le feature moderne di Material Design 3
       ),
-      home: MyHomePage(title: 'Lurkers, let\'s play!'),
+
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF004225),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+
+      // 4. Decidi quale tema usare (o lascialo decidere al sistema)
+      themeMode: ThemeMode.system, // Puoi impostare .light, .dark, o .system
+
+      home: const AuthGate(),
     );
   }
 }
