@@ -20,23 +20,62 @@ class _SignUpPageState extends State<SignUpPage> {
   final _nicknameController = TextEditingController();
 
   void signUp() async {
-    final email = _emailController.text;
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
     final verificationPassword = _verificationPasswordController.text;
-    final nickname = _nicknameController.text;
+    final nickname = _nicknameController.text.trim();
+
+    // Validation
+    if (email.isEmpty || password.isEmpty || nickname.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill in all fields"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     if (verificationPassword != password) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password must be the same!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Passwords do not match!"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    } else {
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password must be at least 6 characters"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       await authService.signUpWithEmailPassword(email, password, nickname);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Account created successfully! Welcome to the hunt!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error creating account: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
-  }
   }
   @override
   Widget build(BuildContext context) {
@@ -58,13 +97,13 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: Column(
                     children: [
                       Icon(
-                        Icons.groups,
+                        Icons.person_add,
                         size: 48,
                         color: theme.colorScheme.onPrimaryContainer,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Welcome back to Lurkers',
+                        'Join the Hunt',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -73,7 +112,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to your account',
+                        'Create your assassin account',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -88,76 +127,76 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 32),
 
               // Email
-                    TextField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Icon(
-                            Icons.alternate_email_rounded,
-                            color: theme.primaryColor,
-                            
-                          ),
-  
-                        ),
-                      ),
-                    
-                    const SizedBox(height: 16),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email Address',
+                  hintText: 'Enter your email',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: Icon(
+                    Icons.alternate_email_rounded,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
               
-              // nickname
-                    TextField(
-                      controller: _nicknameController,
-                      decoration: InputDecoration(
-                        labelText: 'Nickname',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Icon(
-                            Icons.person,
-                            color: theme.primaryColor,
-                            
-                          ),
-  
-                        ),
-                      ),
-                    
-                    const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-              // password
-                    TextField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Icon(
-                            Icons.password,
-                            color: theme.primaryColor,
-                            
-                          ),
-  
-                        ),
-                      ),
-                    
-                    const SizedBox(height: 16),
-              // password
-                    TextField(
-                      controller: _verificationPasswordController,
-                      decoration: InputDecoration(
-                        labelText: 'Rewrite Password',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Icon(
-                            Icons.password,
-                            color: theme.primaryColor,
-                            
-                          ),
-  
-                        ),
-                      ),
-                    
-                    const SizedBox(height: 16),
-                   
+              // Nickname
+              TextField(
+                controller: _nicknameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Assassin Nickname',
+                  hintText: 'Choose your identity',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: Icon(
+                    Icons.person,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+
+              // Password
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'Create a secure password',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: Icon(
+                    Icons.lock,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+
+              // Confirm Password
+              TextField(
+                controller: _verificationPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  hintText: 'Retype your password',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: Icon(
+                    Icons.lock_outline,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
               
               FilledButton.icon(
-                icon: const Icon(Icons.rocket_launch),
-                label: const Text('Sign In'),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Create Account'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -167,7 +206,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 },
               ),
 
-              const SizedBox(height: 24,),
+              const SizedBox(height: 24),
+              
               GestureDetector(
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(
@@ -176,7 +216,11 @@ class _SignUpPageState extends State<SignUpPage> {
                 },
                 child: Center(
                   child: Text(
-                    "Alredy have an account? Sign In"
+                    "Already have an account? Sign In",
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               )
