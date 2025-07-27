@@ -57,14 +57,20 @@ class _SignInPageState extends State<SignInPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Form di autenticazione: più stretto per migliore leggibilità
+          double maxWidth = constraints.maxWidth < 600 ? double.infinity : 500;
 
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
               // Hero section with game description
               Card(
                 child: Padding(
@@ -166,10 +172,12 @@ class _SignInPageState extends State<SignInPage> {
                 ),
               )
             ],
-          ),
-        ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
-  

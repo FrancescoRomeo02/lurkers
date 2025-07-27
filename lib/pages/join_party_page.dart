@@ -57,12 +57,28 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
       appBar: AppBar(
         title: const Text('Join Game'),
         elevation: 0,
+        centerTitle: true,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [ 
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Determina la larghezza massima basata sulle dimensioni dello schermo
+          double maxWidth;
+          if (constraints.maxWidth < 600) {
+            maxWidth = double.infinity; // Mobile: larghezza piena
+          } else if (constraints.maxWidth < 1200) {
+            maxWidth = 700; // Tablet
+          } else {
+            maxWidth = 800; // Desktop
+          }
+
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [ 
               Expanded(
                 child: ListView(
                   children: <Widget>[
@@ -237,7 +253,11 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
               ),
             ],
           ),
-        ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

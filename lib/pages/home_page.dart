@@ -16,17 +16,31 @@ class HomePage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-
       appBar: AppBar(
         title: Text(title),
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Determina la larghezza massima basata sulle dimensioni dello schermo
+          double maxWidth;
+          if (constraints.maxWidth < 600) {
+            maxWidth = double.infinity; // Mobile: larghezza piena
+          } else if (constraints.maxWidth < 1200) {
+            maxWidth = 700; // Tablet
+          } else {
+            maxWidth = 800; // Desktop
+          }
+
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
               // Hero section with game description
               Card(
                 child: Padding(
@@ -93,8 +107,11 @@ class HomePage extends StatelessWidget {
                 },
               ),
             ],
-          ),
-        ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

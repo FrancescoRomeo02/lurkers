@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lurkers/utils/responsive_utils.dart';
 
 class PartyLobbyPage extends StatelessWidget {
   final String partyCode;
@@ -22,6 +23,7 @@ class PartyLobbyPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Game: $partyCode'),
+        centerTitle: true,
         actions: [
           if (isHost)
             IconButton(
@@ -32,11 +34,13 @@ class PartyLobbyPage extends StatelessWidget {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return buildResponsiveLayout(
+            constraints: constraints,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // Party Code Card
             Card(
               color: Theme.of(context).colorScheme.primaryContainer,
@@ -232,6 +236,8 @@ class PartyLobbyPage extends StatelessWidget {
             ],
           ],
         ),
+          );
+        },
       ),
     );
   }
