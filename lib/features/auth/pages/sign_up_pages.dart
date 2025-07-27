@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/auth/pages/login_page.dart';
+import 'package:lurkers/core/utils/toast_helper.dart';
 
 
 class SignUpPage extends StatefulWidget {
@@ -27,53 +28,28 @@ class _SignUpPageState extends State<SignUpPage> {
 
     // Validation
     if (email.isEmpty || password.isEmpty || nickname.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill in all fields"),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ToastHelper.showWarning("Please fill in all fields");
       return;
     }
 
     if (verificationPassword != password) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Passwords do not match!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError("Passwords do not match!");
       return;
     }
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password must be at least 6 characters"),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ToastHelper.showWarning("Password must be at least 6 characters");
       return;
     }
 
     try {
       await authService.signUpWithEmailPassword(email, password, nickname);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Account created successfully! Welcome to the hunt!"),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ToastHelper.showSuccess("Account created successfully! Welcome to the hunt!");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error creating account: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.showError("Error creating account: $e");
       }
     }
   }

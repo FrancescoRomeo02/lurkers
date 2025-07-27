@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lurkers/features/game/pages/party_lobby_page.dart';
+import 'package:lurkers/core/utils/toast_helper.dart';
 
 class JoinPartyScreen extends StatefulWidget {
   const JoinPartyScreen({super.key});
@@ -11,7 +12,6 @@ class JoinPartyScreen extends StatefulWidget {
 class _JoinPartyScreenState extends State<JoinPartyScreen> {
   // --- NESSUNA MODIFICA ALLA LOGICA DI STATO ---
   final TextEditingController _partyCodeController = TextEditingController();
-  final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _placeController = TextEditingController();
   final TextEditingController _objectController = TextEditingController();
 
@@ -21,7 +21,6 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
       _partyCodeController.text.isNotEmpty &&
       _partyCodeController.text.contains('-') &&
       _partyCodeController.text.length >= 5 &&
-      _nicknameController.text.isNotEmpty &&
       _placeController.text.isNotEmpty &&
       _objectController.text.isNotEmpty;
 
@@ -30,7 +29,6 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
     super.initState();
 
     _partyCodeController.addListener(_validateForm);
-    _nicknameController.addListener(_validateForm);
     _placeController.addListener(_validateForm);
     _objectController.addListener(_validateForm);
   }
@@ -44,7 +42,6 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
   @override
   void dispose() {
     _partyCodeController.dispose();
-    _nicknameController.dispose();
     _placeController.dispose();
     _objectController.dispose();
     super.dispose();
@@ -132,29 +129,6 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     ),
                     
                     const SizedBox(height: 24),
-
-                    // Player Info Section
-                    Text(
-                      'Your Player Identity',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: _nicknameController,
-                      decoration: const InputDecoration(
-                        labelText: "Your Nickname",
-                        helperText: "How other players will identify you",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                    ),
-
-                    const SizedBox(height: 20),
                     
                     // Character Background Section
                     Text(
@@ -217,21 +191,9 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     ),
                     onPressed: _isButtonEnabled ? () async {
                       // Show success feedback
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.white),
-                              const SizedBox(width: 8),
-                              Text("Successfully joined game '${_partyCodeController.text}'!"),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                      ToastHelper.showSuccess("Successfully joined game '${_partyCodeController.text}'!");
                       
-                      // Wait a moment for the snackbar, then navigate
+                      // Wait a moment for the toast, then navigate
                       await Future.delayed(const Duration(milliseconds: 500));
                       
                       if (context.mounted) {
@@ -239,7 +201,6 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                           MaterialPageRoute(
                             builder: (context) => PartyLobbyPage(
                               partyCode: _partyCodeController.text,
-                              nickname: _nicknameController.text,
                               location: _placeController.text,
                               evidence: _objectController.text,
                               isHost: false, // Chi si unisce non è l'host

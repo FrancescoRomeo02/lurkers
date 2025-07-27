@@ -31,7 +31,7 @@ class AuthService {
  String? getCurrentUserNick() {
     final session = _supabase.auth.currentSession;
     final user = session?.user;
-    return user?.userMetadata?['dispplay_name'];
+    return user?.userMetadata?['display_name'];
   }
 
 

@@ -1,30 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lurkers/core/utils/toast_helper.dart';
+import 'package:lurkers/features/auth/services/auth_service.dart';
 
-class PartyLobbyPage extends StatelessWidget {
+
+class PartyLobbyPage extends StatefulWidget {
   final String partyCode;
-  final String nickname;
   final String location;
   final String evidence;
   final bool isHost;
 
+
   const PartyLobbyPage({
     super.key,
     required this.partyCode,
-    required this.nickname,
     required this.location,
     required this.evidence,
     this.isHost = false,
   });
 
   @override
+  State<PartyLobbyPage> createState() => _PartyLobbyPageState();
+}
+
+class _PartyLobbyPageState extends State<PartyLobbyPage> {
+  final AuthService _authService = AuthService();
+  String? nickname;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserNickname();
+  }
+
+  void _loadUserNickname() {
+    setState(() {
+      nickname = _authService.getCurrentUserNick();
+      isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (nickname == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Error loading user profile'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Game: $partyCode'),
+        title: Text('Game: ${widget.partyCode}'),
         centerTitle: true,
         actions: [
-          if (isHost)
+          if (widget.isHost)
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -73,7 +125,7 @@ class PartyLobbyPage extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    partyCode,
+                                    widget.partyCode,
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontFamily: 'monospace',
@@ -86,13 +138,8 @@ class PartyLobbyPage extends StatelessWidget {
                             IconButton(
                               icon: const Icon(Icons.copy),
                               onPressed: () {
-                                Clipboard.setData(ClipboardData(text: partyCode));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Game code copied to clipboard!'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
+                                Clipboard.setData(ClipboardData(text: widget.partyCode));
+                                ToastHelper.showSuccess('Game code copied to clipboard!');
                               },
                             ),
                             IconButton(
@@ -136,7 +183,7 @@ class PartyLobbyPage extends StatelessWidget {
                                         'Target Location',
                                         style: TextStyle(fontWeight: FontWeight.w600),
                                       ),
-                                      Text(location),
+                                      Text(widget.location),
                                     ],
                                   ),
                                 ),
@@ -155,7 +202,7 @@ class PartyLobbyPage extends StatelessWidget {
                                         'Required Object',
                                         style: TextStyle(fontWeight: FontWeight.w600),
                                       ),
-                                      Text(evidence),
+                                      Text(widget.evidence),
                                     ],
                                   ),
                                 ),
@@ -186,20 +233,20 @@ class PartyLobbyPage extends StatelessWidget {
                             children: [
                               ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: isHost 
+                                  backgroundColor: widget.isHost 
                                     ? Theme.of(context).colorScheme.primary 
                                     : Theme.of(context).colorScheme.secondary,
                                   child: Text(
-                                    nickname[0].toUpperCase(),
+                                    nickname!.isNotEmpty ? nickname![0].toUpperCase() : '?',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                                title: Text(nickname),
-                                subtitle: Text(isHost ? 'Game Master' : 'Assassin'),
-                                trailing: isHost ? const Icon(Icons.star, color: Colors.amber) : null,
+                                title: Text(nickname!),
+                                subtitle: Text(widget.isHost ? 'Game Master' : 'Assassin'),
+                                trailing: widget.isHost ? const Icon(Icons.star, color: Colors.amber) : null,
                               ),
                               const Divider(),
                               const Text(
@@ -218,7 +265,7 @@ class PartyLobbyPage extends StatelessWidget {
                     const SizedBox(height: 16),
             
                     // Action Buttons
-                    if (isHost) ...[
+                    if (widget.isHost) ...[
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(

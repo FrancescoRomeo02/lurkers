@@ -1,6 +1,7 @@
 // home_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/pages/create_party_page.dart';
 import 'package:lurkers/features/game/pages/join_party_page.dart';
 
@@ -106,6 +107,23 @@ class HomePage extends StatelessWidget {
                   );
                 },
               ),
+
+              const SizedBox(height: 24,),
+
+              GestureDetector(
+                onTap: () {
+                  AuthService().signOut();
+                },
+                child: Center(
+                  child: Text(
+                    "Sign Out",
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              )
             ],
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/auth/pages/sign_up_pages.dart';
+import 'package:lurkers/core/utils/toast_helper.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -22,33 +23,18 @@ class _SignInPageState extends State<SignInPage> {
 
     // Validation
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter both email and password"),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ToastHelper.showWarning("Please enter both email and password");
       return;
     }
 
     try {
       await authService.signInWithEmailPassword(email, password);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Welcome back, hunter!"),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ToastHelper.showSuccess("Welcome back, hunter!");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Login failed: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.showError("Login failed: $e");
       }
     }
   }

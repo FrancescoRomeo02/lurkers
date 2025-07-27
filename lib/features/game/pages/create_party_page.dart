@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'package:lurkers/features/game/pages/party_lobby_page.dart';
+import 'package:lurkers/core/utils/toast_helper.dart';
 
 class CreatePartyScreen extends StatefulWidget {
   const CreatePartyScreen({super.key});
@@ -12,7 +13,6 @@ class CreatePartyScreen extends StatefulWidget {
 class _CreatePartyScreenState extends State<CreatePartyScreen> {
   // --- NESSUNA MODIFICA ALLA LOGICA DI STATO ---
   late final TextEditingController _partyCodeController;
-  final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _placeController = TextEditingController();
   final TextEditingController _objectController = TextEditingController();
 
@@ -21,7 +21,6 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
 
   bool get _isFormValid =>
       _isPartyCodeLocked &&
-      _nicknameController.text.isNotEmpty &&
       _placeController.text.isNotEmpty &&
       _objectController.text.isNotEmpty;
 
@@ -33,7 +32,6 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
     _partyCodeController = TextEditingController(text: randomCode);
 
     _partyCodeController.addListener(_validateForm);
-    _nicknameController.addListener(_validateForm);
     _placeController.addListener(_validateForm);
     _objectController.addListener(_validateForm);
   }
@@ -47,7 +45,6 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
   @override
   void dispose() {
     _partyCodeController.dispose();
-    _nicknameController.dispose();
     _placeController.dispose();
     _objectController.dispose();
     super.dispose();
@@ -148,29 +145,6 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                     ),
                     
                     const SizedBox(height: 20),
-
-                    // Player Info Section
-                    Text(
-                      'Your Player Information',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: _nicknameController,
-                      decoration: const InputDecoration(
-                        labelText: "Your Nickname",
-                        helperText: "How other players will see you",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                    ),
-
-                    const SizedBox(height: 20),
                     
                     // Game Setup Section
                     Text(
@@ -224,21 +198,9 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                     ),
                     onPressed: _isButtonEnabled ? () async {
                       // Show success feedback
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.white),
-                              const SizedBox(width: 8),
-                              Text("Game '${_partyCodeController.text}' created successfully!"),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                      ToastHelper.showSuccess("Game '${_partyCodeController.text}' created successfully!");
                       
-                      // Wait a moment for the snackbar, then navigate
+                      // Wait a moment for the toast, then navigate
                       await Future.delayed(const Duration(milliseconds: 500));
                       
                       if (context.mounted) {
@@ -246,7 +208,6 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                           MaterialPageRoute(
                             builder: (context) => PartyLobbyPage(
                               partyCode: _partyCodeController.text,
-                              nickname: _nicknameController.text,
                               location: _placeController.text,
                               evidence: _objectController.text,
                               isHost: true, // Chi crea la party è sempre l'host
