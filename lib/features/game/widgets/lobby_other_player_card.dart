@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:lurkers/features/game/models/party_player.dart';
 
 class LobbyOtherPlayerCard extends StatelessWidget {
-  final String nickname;
+  final PartyPlayer player;
   final bool isHost;
-  final bool isOnline = true;
   
   const LobbyOtherPlayerCard({
     super.key,
-    required this.nickname,
+    required this.player,
     this.isHost = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final nickname = player.playerId.isNotEmpty ? player.playerId : 'Unknown Player';
+    final isOnline = player.status == PlayerStatus.active;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       decoration: BoxDecoration(
@@ -38,7 +41,7 @@ class LobbyOtherPlayerCard extends StatelessWidget {
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.secondary,
                   child: Text(
-                    nickname.isNotEmpty ? nickname[0].toUpperCase() : '?',
+                    player.playerId.isNotEmpty ? nickname[0].toUpperCase() : '?',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

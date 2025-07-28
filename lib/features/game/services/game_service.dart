@@ -1,3 +1,4 @@
+import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/game_player.dart';
 
@@ -15,13 +16,11 @@ class GameService {
           });
       return true;
     } catch (e) {
-      print(e);
       return false;
     }
   }
 
   /// Join a Party by party code
-
   // Get the party id from the party code
   Future<int> getPartyIdByCode(String partyCode) async {
     try {
@@ -32,17 +31,16 @@ class GameService {
           .maybeSingle();
 
       if (response == null) {
-        print('No party found with code: $partyCode');
         return 0;
       }
 
       return response['id'];
     } catch (e) {
-      print('Error fetching party ID: $e');
       return 0;
     }
   }
 
+  // Join a party by party code
   Future<bool> joinPartyByPartyCode(
     String partyCode,
     String location,
@@ -69,29 +67,25 @@ class GameService {
     }
   }
 
-
-
-  /// Recupera tutti i giocatori di una sessione
-  Future<List<GamePlayer>> getGamePlayers(String gameCode) async {
+  /// Get all party information by party code
+  Future<List<PartyPlayer>> getGamePlayers(String partyCode) async {
     try {
-      final gameResponse = await _supabase
-          .from('game_sessions')
-          .select('id')
-          .eq('game_code', gameCode)
-          .single();
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return [];
+      }
 
-      final playersResponse = await _supabase
-          .from('game_players')
+      final response = await _supabase
+          .from('party_players')
           .select()
-          .eq('game_session_id', gameResponse['id'])
-          .order('joined_at');
+          .eq('party_id', partyId);
 
-      return playersResponse
-          .map((player) => GamePlayer.fromJson(player))
+      return (response as List<dynamic>)
+          .map((item) => PartyPlayer.fromJson(item))
           .toList();
+
     } catch (e) {
       throw Exception('Failed to get game players: $e');
     }
   }
-
 }

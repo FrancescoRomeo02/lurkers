@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
+import 'package:lurkers/features/game/models/party_player.dart';
+import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
 import 'package:lurkers/features/game/widgets/lobby_other_player_card.dart';
 
@@ -27,6 +29,8 @@ class PartyLobbyPage extends StatefulWidget {
 
 class _PartyLobbyPageState extends State<PartyLobbyPage> {
   final AuthService _authService = AuthService();
+  final GameService _gameService = GameService();
+  
   String? nickname;
   bool isLoading = true;
 
@@ -178,14 +182,33 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                               const Divider(),
 
                               // Example of other players (simplified view)
-                              // TODO: Replace with actual player list from backend
-                              LobbyOtherPlayerCard(
-                                nickname: "Player2",
-                                isHost: false,
-                              ),
-                              LobbyOtherPlayerCard(
-                                nickname: "Player3", 
-                                isHost: false,
+                              Expanded(
+                                child: FutureBuilder<List<PartyPlayer>>(
+                                  future: _gameService.getGamePlayers(widget.partyCode),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return const Center(child: CircularProgressIndicator());
+                                    }
+                                    if (snapshot.hasError) {
+                                      return Center(child: Text('Error: ${snapshot.error}'));
+                                    }
+                                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                                      return const Center(child: Text('No other players in the game'));
+                                    }
+
+                                    final players = snapshot.data!;
+                                    if (players.isEmpty) {
+                                      return const Center(child: Text('No players found'));
+                                    }
+                                    return ListView.builder(
+                                      itemCount: players.length,
+                                      itemBuilder: (context, index) {
+                                        final player = players[index];
+                                        return LobbyOtherPlayerCard(player: player);
+                                      },
+                                    );
+                                  },
+                                ),
                               ),
 
                               const SizedBox(height: 8),
