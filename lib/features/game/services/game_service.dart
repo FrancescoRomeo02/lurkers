@@ -50,7 +50,6 @@ class GameService {
     try {
       int partyId = await getPartyIdByCode(partyCode);
       if (partyId == 0) {
-        print('Party not found for code: $partyCode');
         return false;
       }
       await _supabase
@@ -64,7 +63,6 @@ class GameService {
       });
       return true;
     } catch (e) {
-      print('Error joining party: $e');
       return false;
     }
   }
@@ -86,7 +84,6 @@ class GameService {
 
       return response != null;
     } catch (e) {
-      print('Error checking if user is in party: $e');
       return false;
     }
   }
@@ -101,17 +98,10 @@ class GameService {
           .maybeSingle();
 
       if (response == null) {
-        print('Party not found for code: $partyCode');
         return false;
       }
-      print(user);
-      print('Checking if user ${user.id} is host of party $partyCode');
-      print('Host ID: ${response['host_id']}');
-
-
       return response['host_id'] == user.playerId;
     } catch (e) {
-      print('Error checking if user is host: $e');
       return false;
     }
   }
@@ -133,7 +123,6 @@ class GameService {
 
       return response;
     } catch (e) {
-      print('Error getting user party data: $e');
       return null;
     }
   }
@@ -203,7 +192,6 @@ class GameService {
         }
       }
     } catch (e) {
-      print('Error in joinOrRejoinParty: $e');
       return {
         'success': false,
         'error': 'An error occurred: $e',
@@ -229,7 +217,6 @@ class GameService {
       // Aggiungi le informazioni del profilo per ogni giocatore
       for (final item in response) {
         item['user_info'] = await getUserInfoByUuid(item['player_id']);
-        print('User info for ${item['player_id']}: ${item['user_info']}');
 
       }
 

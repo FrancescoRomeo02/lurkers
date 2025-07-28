@@ -6,6 +6,7 @@ import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
 import 'package:lurkers/features/game/widgets/lobby_other_player_card.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class PartyLobbyPage extends StatefulWidget {
@@ -31,7 +32,11 @@ class PartyLobbyPage extends StatefulWidget {
 class _PartyLobbyPageState extends State<PartyLobbyPage> {
   final AuthService _authService = AuthService();
   final GameService _gameService = GameService();
-  
+    
+  late RealtimeChannel _subscription;
+  List<PartyPlayer> _players = [];
+  bool _playersLoading = true;
+
   String? nickname;
   bool isLoading = true;
   bool isHost = false;
@@ -40,6 +45,8 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
   void initState() {
     super.initState();
     _loadUserNickname();
+    _subscribeToPlayers();
+    _fetchPlayers();
   }
 
   void _loadUserNickname() {
@@ -49,7 +56,35 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
     });
   }
 
+  void _subscribeToPlayers() {
+    _subscription = Supabase.instance.client
+      .channel('public:party_players')
+      .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'party_players',
+          callback: (payload) => _fetchPlayers(),
+        )
+      .subscribe();
+  }
 
+    void _fetchPlayers() async {
+      print('Fetching players for party: ${widget.partyCode}');
+      setState(() => _playersLoading = true);
+      final players = await _gameService.getGamePlayers(widget.partyCode);
+      print('Fetched ${players.length} players for party: ${widget.partyCode}');
+      
+      setState(() {
+        _players = players;
+        _playersLoading = false;
+      });
+  }
+
+  @override
+  void dispose() {
+    Supabase.instance.client.removeChannel(_subscription);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context){
@@ -187,8 +222,11 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
 
                               // Example of other players (simplified view)
                               Expanded(
-                                child: FutureBuilder<List<PartyPlayer>>(
-                                  future: _gameService.getGamePlayers(widget.partyCode),
+                                child: _playersLoading 
+                                    ? const Center(child: CircularProgressIndicator())
+                                    : FutureBuilder<List<PartyPlayer>>(
+                                    initialData: _players,
+                                    future: Future.value(_players),
                                   builder: (context, snapshot) {
                                     if (snapshot.connectionState == ConnectionState.waiting) {
                                       return const Center(child: CircularProgressIndicator());
