@@ -20,13 +20,18 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
   final TextEditingController _objectController = TextEditingController();
 
   bool _isButtonEnabled = false;
+  bool _showLocationFields = false;
+  bool _isLoading = false;
 
-  bool get _isFormValid =>
+  bool get _isPartyCodeValid =>
       _partyCodeController.text.isNotEmpty &&
       _partyCodeController.text.contains('-') &&
-      _partyCodeController.text.length >= 5 &&
-      _placeController.text.isNotEmpty &&
-      _objectController.text.isNotEmpty;
+      _partyCodeController.text.length >= 5;
+
+  bool get _isFormValid =>
+      _isPartyCodeValid &&
+      (!_showLocationFields || 
+        (_placeController.text.isNotEmpty && _objectController.text.isNotEmpty));
 
   @override
   void initState() {
@@ -134,48 +139,50 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     
                     const SizedBox(height: 24),
                     
-                    // Character Background Section
-                    Text(
-                      'Your Starting Resources',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    // Character Background Section - Show only if needed
+                    if (_showLocationFields) ...[
+                      Text(
+                        'Your Starting Resources',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 8),
-                    
-                    Text(
-                      'Choose your starting location and object for the assassination game.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
+                      
+                      const SizedBox(height: 8),
+                      
+                      Text(
+                        'Choose your starting location and object for the assassination game.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    TextField(
-                      controller: _placeController,
-                      decoration: const InputDecoration(
-                        labelText: "Your Starting Location",
-                        helperText: "Where will you begin the game?",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.location_on),
+                      
+                      const SizedBox(height: 12),
+                      
+                      TextField(
+                        controller: _placeController,
+                        decoration: const InputDecoration(
+                          labelText: "Your Starting Location",
+                          helperText: "Where will you begin the game?",
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.location_on),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
                       ),
-                      textCapitalization: TextCapitalization.sentences,
-                    ),
 
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    TextField(
-                      controller: _objectController,
-                      decoration: const InputDecoration(
-                        labelText: "Your Starting Object",
-                        helperText: "What object do you possess at the start?",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.inventory),
+                      TextField(
+                        controller: _objectController,
+                        decoration: const InputDecoration(
+                          labelText: "Your Starting Object",
+                          helperText: "What object do you possess at the start?",
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.inventory),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
                       ),
-                      textCapitalization: TextCapitalization.sentences,
-                    ),
+                    ],
 
                     const SizedBox(height: 40),
                   ],
@@ -187,40 +194,75 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    icon: const Icon(Icons.login),
-                    label: const Text("Join the Hunt"),
+                    icon: _isLoading 
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.login),
+                    label: Text(_showLocationFields ? "Join the Hunt" : "Check Game"),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     onPressed: _isButtonEnabled ? () async {
-                      // Show success feedback
-                      bool partyJoined =  await _gameService.joinPartyByPartyCode(
-                        _partyCodeController.text, 
-                        _placeController.text,
-                        _objectController.text,
-                        _authService.currentUser,);
+                      setState(() {
+                        _isLoading = true;
+                      });
 
-                      if (!partyJoined) {
-                        SnackBarHelper.showError(context, "Not joined game '${_partyCodeController.text}'!");
-                        return;
-                      }
-                      SnackBarHelper.showSuccess(context, "Successfully joined game '${_partyCodeController.text}'!");
-                      
-                      // Wait a moment for the snackbar, then navigate
-                      await Future.delayed(const Duration(milliseconds: 1000));
-                      
-                      if (context.mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => PartyLobbyPage(
-                              partyCode: _partyCodeController.text,
-                              location: _placeController.text,
-                              evidence: _objectController.text,
-                              isHost: false, // Chi si unisce non è l'host
-                            ),
-                          ),
+                      try {
+                        final result = await _gameService.joinOrRejoinParty(
+                          _partyCodeController.text,
+                          _authService.currentUser,
+                          location: _showLocationFields ? _placeController.text : null,
+                          item: _showLocationFields ? _objectController.text : null,
                         );
+
+                        if (result['success'] == true) {
+                          // Successfully joined or rejoined
+                          SnackBarHelper.showSuccess(
+                            context, 
+                            result['message'] ?? "Successfully joined game '${_partyCodeController.text}'!"
+                          );
+                          
+                          // Wait a moment for the snackbar, then navigate
+                          await Future.delayed(const Duration(milliseconds: 1000));
+                          
+                          if (context.mounted) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => PartyLobbyPage(
+                                  partyCode: _partyCodeController.text,
+                                  location: _showLocationFields ? _placeController.text : '',
+                                  evidence: _showLocationFields ? _objectController.text : '',
+                                  isHost: false,
+                                ),
+                              ),
+                            );
+                          }
+                        } else if (result['requiresData'] == true) {
+                          // Need to show location and item fields
+                          setState(() {
+                            _showLocationFields = true;
+                          });
+                          SnackBarHelper.showInfo(
+                            context, 
+                            result['message'] ?? "Please provide your location and item to join the party"
+                          );
+                        } else {
+                          // Error occurred
+                          SnackBarHelper.showError(
+                            context, 
+                            result['error'] ?? "Failed to join game '${_partyCodeController.text}'!"
+                          );
+                        }
+                      } catch (e) {
+                        SnackBarHelper.showError(context, "An unexpected error occurred: $e");
+                      } finally {
+                        setState(() {
+                          _isLoading = false;
+                        });
                       }
                     } : null,
                   ),

@@ -50,6 +50,7 @@ class GameService {
     try {
       int partyId = await getPartyIdByCode(partyCode);
       if (partyId == 0) {
+        print('Party not found for code: $partyCode');
         return false;
       }
       await _supabase
@@ -63,7 +64,90 @@ class GameService {
       });
       return true;
     } catch (e) {
+      print('Error joining party: $e');
       return false;
+    }
+  }
+
+  /// Check if user is already in a party
+  Future<bool> isUserInParty(String partyCode, dynamic user) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return false;
+      }
+
+      final response = await _supabase
+          .from('party_players')
+          .select('id')
+          .eq('party_id', partyId)
+          .eq('player_id', user.id)
+          .maybeSingle();
+
+      return response != null;
+    } catch (e) {
+      print('Error checking if user is in party: $e');
+      return false;
+    }
+  }
+
+  /// Join or rejoin a party - handles both first time and returning users
+  Future<Map<String, dynamic>> joinOrRejoinParty(
+    String partyCode,
+    dynamic user, {
+    String? location,
+    String? item,
+  }) async {
+    try {
+      // First check if party exists
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return {
+          'success': false,
+          'error': 'Party not found',
+          'requiresData': false,
+        };
+      }
+
+      // Check if user is already in the party
+      final isAlreadyInParty = await isUserInParty(partyCode, user);
+      
+      if (isAlreadyInParty) {
+        // User is already in party, can proceed to lobby
+        return {
+          'success': true,
+          'error': null,
+          'requiresData': false,
+          'message': 'Welcome back to the party!',
+        };
+      } else {
+        // User is not in party yet
+        if (location == null || item == null) {
+          // Need to collect location and item data
+          return {
+            'success': false,
+            'error': null,
+            'requiresData': true,
+            'message': 'Please provide your location and item to join the party',
+          };
+        } else {
+          // Have all data, can join the party
+          final joinSuccess = await joinPartyByPartyCode(partyCode, location, item, user);
+          return {
+            'success': joinSuccess,
+            'error': joinSuccess ? null : 'Failed to join party',
+            'requiresData': false,
+            'message': joinSuccess ? 'Successfully joined the party!' : null,
+          };
+        }
+      }
+    } catch (e) {
+      print('Error in joinOrRejoinParty: $e');
+      return {
+        'success': false,
+        'error': 'An error occurred: $e',
+        'requiresData': false,
+      };
     }
   }
 

@@ -197,13 +197,19 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                                     }
 
                                     final players = snapshot.data!;
-                                    if (players.isEmpty) {
-                                      return const Center(child: Text('No players found'));
+                                    // Filtra l'utente corrente dalla lista degli altri giocatori
+                                    final currentUserId = _authService.currentUser?.id;
+                                    final otherPlayers = players.where((player) => 
+                                        player.playerId != currentUserId
+                                    ).toList();
+                                    
+                                    if (otherPlayers.isEmpty) {
+                                      return const Center(child: Text('No other players in the game'));
                                     }
                                     return ListView.builder(
-                                      itemCount: players.length,
+                                      itemCount: otherPlayers.length,
                                       itemBuilder: (context, index) {
-                                        final player = players[index];
+                                        final player = otherPlayers[index];
                                         return LobbyOtherPlayerCard(player: player);
                                       },
                                     );
