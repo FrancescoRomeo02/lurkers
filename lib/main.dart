@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // 1. Usiamo MaterialApp come radice
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Lurkers - Assassination Game',
       
       // Flutter genererà una palette completa da questo colore.

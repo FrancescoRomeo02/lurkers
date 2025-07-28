@@ -101,10 +101,15 @@ class GameService {
           .maybeSingle();
 
       if (response == null) {
+        print('Party not found for code: $partyCode');
         return false;
       }
+      print(user);
+      print('Checking if user ${user.id} is host of party $partyCode');
+      print('Host ID: ${response['host_id']}');
 
-      return response['host_id'] == user.id;
+
+      return response['host_id'] == user.playerId;
     } catch (e) {
       print('Error checking if user is host: $e');
       return false;

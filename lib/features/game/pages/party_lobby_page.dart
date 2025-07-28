@@ -22,6 +22,7 @@ class PartyLobbyPage extends StatefulWidget {
     required this.evidence,
     this.isHost = false,
   });
+  
 
   @override
   State<PartyLobbyPage> createState() => _PartyLobbyPageState();
@@ -33,6 +34,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
   
   String? nickname;
   bool isLoading = true;
+  bool isHost = false;
 
   @override
   void initState() {
@@ -47,8 +49,10 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
     });
   }
 
+
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     if (isLoading) {
       return const Scaffold(
         body: Center(
@@ -76,7 +80,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
         ),
       );
     }
-
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Game: ${widget.partyCode}'),
@@ -210,7 +214,16 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                                       itemCount: otherPlayers.length,
                                       itemBuilder: (context, index) {
                                         final player = otherPlayers[index];
-                                        return LobbyOtherPlayerCard(player: player);
+                                        return FutureBuilder<bool>(
+                                          future: _gameService.isUserHostOfParty(widget.partyCode, player),
+                                          builder: (context, hostSnapshot) {
+                                            final isPlayerHost = hostSnapshot.data ?? false;
+                                            return LobbyOtherPlayerCard(
+                                              player: player,
+                                              isHost: isPlayerHost,
+                                            );
+                                          },
+                                        );
                                       },
                                     );
                                   },
