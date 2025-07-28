@@ -26,6 +26,7 @@ Future<void> main() async {
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
+
   const MyApp({super.key});
 
   @override

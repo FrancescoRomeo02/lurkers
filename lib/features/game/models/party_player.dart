@@ -4,6 +4,7 @@ class PartyPlayer {
   final int partyId;
   final PlayerStatus status;
   final String playerId;
+  final Map<String, dynamic>? userInfo; // Aggiunto per le informazioni del profilo
   final String insertLocation;
   final String insertItem;
 
@@ -13,6 +14,7 @@ class PartyPlayer {
     required this.partyId,
     required this.status,
     required this.playerId,
+    this.userInfo, // Opzionale, può essere null se non sono disponibili informazioni del profilo
     required this.insertLocation,
     required this.insertItem,
   });
@@ -25,6 +27,7 @@ class PartyPlayer {
       partyId: json['party_id'] as int,
       status: PlayerStatus.fromString(json['status'] as String),
       playerId: json['player_id'] as String,
+      userInfo: json['user_info'] as Map<String, dynamic>?, // Aggiunto per le informazioni del profilo
       insertLocation: json['insert_location'] as String,
       insertItem: json['insert_item'] as String,
     );
@@ -38,6 +41,7 @@ class PartyPlayer {
       'party_id': partyId,
       'status': status.value,
       'player_id': playerId,
+      'user_info': userInfo, // Includi le informazioni del profilo se disponibili
       'insert_location': insertLocation,
       'insert_item': insertItem,
     };
@@ -50,6 +54,7 @@ class PartyPlayer {
     int? partyId,
     PlayerStatus? status,
     String? playerId,
+    Map<String, dynamic>? userInfo, // Aggiunto per le informazioni del profilo
     String? insertLocation,
     String? insertItem,
   }) {
@@ -59,6 +64,7 @@ class PartyPlayer {
       partyId: partyId ?? this.partyId,
       status: status ?? this.status,
       playerId: playerId ?? this.playerId,
+      userInfo: userInfo ?? this.userInfo, // Aggiunto per le informazioni del profilo
       insertLocation: insertLocation ?? this.insertLocation,
       insertItem: insertItem ?? this.insertItem,
     );
@@ -66,7 +72,7 @@ class PartyPlayer {
 
   @override
   String toString() {
-    return 'PartyPlayer(id: $id, partyId: $partyId, status: $status, playerId: $playerId, location: $insertLocation, item: $insertItem)';
+    return 'PartyPlayer(id: $id, partyId: $partyId, status: $status, playerId: $playerId, userInfo: $userInfo location: $insertLocation, item: $insertItem)';
   }
 
   @override
@@ -87,12 +93,9 @@ class PartyPlayer {
 /// Enum per rappresentare i possibili stati del giocatore
 enum PlayerStatus {
   waiting('waiting'),
-  active('active'),
-  assassin('assassin'),
-  underObservation('under_observation'),
+  playing('playing'),
   eliminated('eliminated'),
-  winner('winner'),
-  wrongAccusation('wrong_accusation');
+  winner('winner');
 
   const PlayerStatus(this.value);
 
@@ -111,33 +114,24 @@ enum PlayerStatus {
     switch (this) {
       case PlayerStatus.waiting:
         return 'Waiting for game to start';
-      case PlayerStatus.active:
-        return 'Active player';
-      case PlayerStatus.assassin:
-        return 'Assassin (recently completed mission)';
-      case PlayerStatus.underObservation:
-        return 'Under observation';
+      case PlayerStatus.playing:
+        return 'Playing';
       case PlayerStatus.eliminated:
         return 'Eliminated';
       case PlayerStatus.winner:
         return 'Winner';
-      case PlayerStatus.wrongAccusation:
-        return 'Eliminated (wrong accusation)';
     }
   }
 
   /// Controlla se il giocatore è ancora vivo/attivo nel gioco
   bool get isAlive {
     return this == PlayerStatus.waiting || 
-           this == PlayerStatus.active || 
-           this == PlayerStatus.assassin || 
-           this == PlayerStatus.underObservation;
+           this == PlayerStatus.playing;
   }
 
   /// Controlla se il giocatore è eliminato
   bool get isEliminated {
-    return this == PlayerStatus.eliminated || 
-           this == PlayerStatus.wrongAccusation;
+    return this == PlayerStatus.eliminated;
   }
 
   /// Controlla se il gioco è finito per questo giocatore

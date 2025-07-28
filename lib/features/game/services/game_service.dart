@@ -1,6 +1,6 @@
 import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/game_player.dart';
+
 
 class GameService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -80,6 +80,13 @@ class GameService {
           .select()
           .eq('party_id', partyId);
 
+      // Aggiungi le informazioni del profilo per ogni giocatore
+      for (final item in response) {
+        item['user_info'] = await getUserInfoByUuid(item['player_id']);
+        print('User info for ${item['player_id']}: ${item['user_info']}');
+
+      }
+
       return (response as List<dynamic>)
           .map((item) => PartyPlayer.fromJson(item))
           .toList();
@@ -88,4 +95,22 @@ class GameService {
       throw Exception('Failed to get game players: $e');
     }
   }
+
+  // get user info fom his UUid
+  Future<Map<String, dynamic>?> getUserInfoByUuid(String uuid) async {
+    try {
+      // Opzione 2: Usa una tabella profiles invece di auth.users
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', uuid)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      throw Exception('Failed to get user info: $e');
+    }
+  }
+
+
 }

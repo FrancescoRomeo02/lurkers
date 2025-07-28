@@ -41,10 +41,25 @@ class AuthService {
 
   // Update user profile
   Future<UserResponse> updateProfile({String? nickname}) async {
-    return await _supabase.auth.updateUser(
+    final authResponse = await _supabase.auth.updateUser(
       UserAttributes(
         data: nickname != null ? {'display_name': nickname} : null,
       ),
     );
+
+    // Aggiorna anche la tabella profiles per sincronizzare i dati
+    if (authResponse.user != null && nickname != null) {
+      try {
+        await _supabase
+            .from('profiles')
+            .update({'display_name': nickname})
+            .eq('id', authResponse.user!.id);
+      } catch (e) {
+        // Log l'errore ma non bloccare l'operazione di aggiornamento auth
+        // In produzione, potresti voler usare un logger più sofisticato
+      }
+    }
+
+    return authResponse;
   }
 }

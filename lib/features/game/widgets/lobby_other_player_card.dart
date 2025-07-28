@@ -13,8 +13,8 @@ class LobbyOtherPlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nickname = player.playerId.isNotEmpty ? player.playerId : 'Unknown Player';
-    final isOnline = player.status == PlayerStatus.active;
+    final nickname = player.userInfo?['display_name'] ?? 'Unknown Player';
+    final isOnline = player.status == PlayerStatus.playing || player.status == PlayerStatus.waiting;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -41,7 +41,7 @@ class LobbyOtherPlayerCard extends StatelessWidget {
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.secondary,
                   child: Text(
-                    player.playerId.isNotEmpty ? nickname[0].toUpperCase() : '?',
+                    nickname[0].toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -63,7 +63,7 @@ class LobbyOtherPlayerCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          nickname,
+                          nickname.toString(),
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
