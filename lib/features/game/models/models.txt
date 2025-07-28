@@ -1,0 +1,34 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.mission (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  party_id bigint,
+  item text NOT NULL DEFAULT ''::text,
+  location text NOT NULL DEFAULT ''::text,
+  completed boolean NOT NULL DEFAULT false,
+  user_id uuid NOT NULL,
+  target_id uuid NOT NULL,
+  CONSTRAINT mission_pkey PRIMARY KEY (id),
+  CONSTRAINT mission_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT mission_target_id_fkey FOREIGN KEY (target_id) REFERENCES auth.users(id),
+  CONSTRAINT mission_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.parties(id)
+);
+
+CREATE TABLE public.parties (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  code text NOT NULL UNIQUE,
+  CONSTRAINT parties_pkey PRIMARY KEY (id, code)
+);
+
+CREATE TABLE public.party_players (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  party_id bigint NOT NULL UNIQUE,
+  status USER-DEFINED DEFAULT 'waiting'::status,
+  player_id uuid NOT NULL,
+  CONSTRAINT party_players_pkey PRIMARY KEY (id),
+  CONSTRAINT Games_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.parties(id),
+  CONSTRAINT party_players_player_id_fkey FOREIGN KEY (player_id) REFERENCES auth.users(id)
+);

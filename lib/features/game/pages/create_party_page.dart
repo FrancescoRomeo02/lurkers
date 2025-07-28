@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/pages/party_lobby_page.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
+import 'package:lurkers/features/game/services/game_service.dart';
 
 class CreatePartyScreen extends StatefulWidget {
   const CreatePartyScreen({super.key});
@@ -11,7 +13,10 @@ class CreatePartyScreen extends StatefulWidget {
 }
 
 class _CreatePartyScreenState extends State<CreatePartyScreen> {
-  // --- NESSUNA MODIFICA ALLA LOGICA DI STATO ---
+  final GameService _gameService = GameService();
+  final AuthService _authService = AuthService();
+
+
   late final TextEditingController _partyCodeController;
   final TextEditingController _placeController = TextEditingController();
   final TextEditingController _objectController = TextEditingController();
@@ -197,13 +202,19 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                       textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     onPressed: _isButtonEnabled ? () async {
-                      // Show success feedback
+                      // Create the game party
+                      bool partyCreated = await _gameService.createParty(_partyCodeController.text, _authService.currentUser);
+                      
+                      if (!partyCreated) {
+                        SnackBarHelper.showError(context, "Failed to create game party. Please try again.");
+                        return;
+                      }
                       SnackBarHelper.showSuccess(context, "Game '${_partyCodeController.text}' created successfully!");
                       
                       // Wait a moment for the snackbar, then navigate
                       await Future.delayed(const Duration(milliseconds: 1000));
                       
-                      if (context.mounted) {
+                      if (context.mounted && partyCreated) {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
                             builder: (context) => PartyLobbyPage(

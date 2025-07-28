@@ -27,6 +27,10 @@ class AuthService {
     await _supabase.auth.signOut();
   }
 
+
+  // Get current user
+  User? get currentUser => _supabase.auth.currentUser;
+
   // Get current user nickname
  String? getCurrentUserNick() {
     final session = _supabase.auth.currentSession;

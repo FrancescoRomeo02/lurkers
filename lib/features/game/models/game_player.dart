@@ -2,28 +2,16 @@
 class GamePlayer {
   final String id;
   final String nickname;
-  final String? location;
-  final String? evidence;
-  final bool isHost;
-  final DateTime joinedAt;
 
   GamePlayer({
     required this.id,
     required this.nickname,
-    this.location,
-    this.evidence,
-    required this.isHost,
-    required this.joinedAt,
   });
 
   factory GamePlayer.fromJson(Map<String, dynamic> json) {
     return GamePlayer(
       id: json['id'],
       nickname: json['nickname'],
-      location: json['location'],
-      evidence: json['evidence'],
-      isHost: json['is_host'] ?? false,
-      joinedAt: DateTime.parse(json['joined_at']),
     );
   }
 
@@ -31,10 +19,6 @@ class GamePlayer {
     return {
       'id': id,
       'nickname': nickname,
-      'location': location,
-      'evidence': evidence,
-      'is_host': isHost,
-      'joined_at': joinedAt.toIso8601String(),
     };
   }
 
@@ -48,3 +32,4 @@ class GamePlayer {
   @override
   int get hashCode => id.hashCode;
 }
+
