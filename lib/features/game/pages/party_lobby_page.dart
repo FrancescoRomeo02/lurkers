@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/models/party_player.dart';
+import 'package:lurkers/features/game/pages/game_page.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
 import 'package:lurkers/features/game/widgets/lobby_other_player_card.dart';
@@ -71,7 +72,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
     void _fetchPlayers() async {
       print('Fetching players for party: ${widget.partyCode}');
       setState(() => _playersLoading = true);
-      final players = await _gameService.getGamePlayers(widget.partyCode);
+      final players = await _gameService.getPartyPlayers(widget.partyCode);
       print('Fetched ${players.length} players for party: ${widget.partyCode}');
       
       setState(() {
@@ -296,7 +297,16 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                           onPressed: () {
-                            // Start hunt logic
+                            // Start the game logic here
+                            _gameService.startGame(widget.partyCode).then((success) {
+                              if (success) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (context) => GamePage(partyCode: widget.partyCode)),
+                                  );
+                              } else {
+                                SnackBarHelper.showError(context, 'Failed to start the game. Please try again.');
+                              }
+                            });
                           },
                         ),
                       ),

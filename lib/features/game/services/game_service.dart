@@ -202,7 +202,7 @@ class GameService {
   }
 
   /// Get all party information by party code
-  Future<List<PartyPlayer>> getGamePlayers(String partyCode) async {
+  Future<List<PartyPlayer>> getPartyPlayers(String partyCode) async {
     try {
       final partyId = await getPartyIdByCode(partyCode);
       if (partyId == 0) {
@@ -232,7 +232,6 @@ class GameService {
   // get user info fom his UUid
   Future<Map<String, dynamic>?> getUserInfoByUuid(String uuid) async {
     try {
-      // Opzione 2: Usa una tabella profiles invece di auth.users
       final response = await _supabase
           .from('profiles')
           .select()
@@ -245,5 +244,20 @@ class GameService {
     }
   }
 
-
+  /// Start the game by party code
+  Future<bool> startGame(String partyCode) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return false;
+      }
+      await _supabase
+          .from('party_players')
+          .update({'status': 'active'})
+          .eq('id', partyId);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

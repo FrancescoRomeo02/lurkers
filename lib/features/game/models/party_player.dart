@@ -90,9 +90,10 @@ class PartyPlayer {
   }
 }
 
-/// Enum per rappresentare i possibili stati del giocatore
+/// TODO: Enum per rappresentare i possibili stati del giocatore
 enum PlayerStatus {
   waiting('waiting'),
+  active('active'),
   playing('playing'),
   eliminated('eliminated'),
   winner('winner');
@@ -120,6 +121,8 @@ enum PlayerStatus {
         return 'Eliminated';
       case PlayerStatus.winner:
         return 'Winner';
+      case PlayerStatus.active:
+        return 'Active';
     }
   }
 
