@@ -234,9 +234,9 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                               MaterialPageRoute(
                                 builder: (context) => PartyLobbyPage(
                                   partyCode: _partyCodeController.text,
-                                  location: _showLocationFields ? _placeController.text : '',
-                                  evidence: _showLocationFields ? _objectController.text : '',
-                                  isHost: result['isHost'] ?? false, // Usa il valore dal risultato
+                                  location: result['location'] ?? (_showLocationFields ? _placeController.text : ''),
+                                  evidence: result['item'] ?? (_showLocationFields ? _objectController.text : ''),
+                                  isHost: result['isHost'] ?? false,
                                 ),
                               ),
                             );

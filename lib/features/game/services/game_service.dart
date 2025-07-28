@@ -111,6 +111,28 @@ class GameService {
     }
   }
 
+  /// Get user's data from party_players table
+  Future<Map<String, dynamic>?> getUserPartyData(String partyCode, dynamic user) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return null;
+      }
+
+      final response = await _supabase
+          .from('party_players')
+          .select('insert_location, insert_item')
+          .eq('party_id', partyId)
+          .eq('player_id', user.id)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      print('Error getting user party data: $e');
+      return null;
+    }
+  }
+
   /// Join or rejoin a party - handles both first time and returning users
   Future<Map<String, dynamic>> joinOrRejoinParty(
     String partyCode,
@@ -137,12 +159,15 @@ class GameService {
       final isAlreadyInParty = await isUserInParty(partyCode, user);
       
       if (isAlreadyInParty) {
-        // User is already in party, can proceed to lobby
+        // User is already in party, get their original data
+        final userData = await getUserPartyData(partyCode, user);
         return {
           'success': true,
           'error': null,
           'requiresData': false,
           'isHost': isHost,
+          'location': userData?['insert_location'] ?? '',
+          'item': userData?['insert_item'] ?? '',
           'message': isHost ? 'Welcome back, Game Master!' : 'Welcome back to the party!',
         };
       } else {
@@ -164,6 +189,8 @@ class GameService {
             'error': joinSuccess ? null : 'Failed to join party',
             'requiresData': false,
             'isHost': isHost,
+            'location': joinSuccess ? location : '',
+            'item': joinSuccess ? item : '',
             'message': joinSuccess 
                 ? (isHost ? 'Successfully rejoined as Game Master!' : 'Successfully joined the party!')
                 : null,
