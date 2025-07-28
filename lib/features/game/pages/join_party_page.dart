@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/pages/party_lobby_page.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
+import 'package:lurkers/features/game/services/game_service.dart';
 
 class JoinPartyScreen extends StatefulWidget {
   const JoinPartyScreen({super.key});
@@ -10,7 +12,9 @@ class JoinPartyScreen extends StatefulWidget {
 }
 
 class _JoinPartyScreenState extends State<JoinPartyScreen> {
-  // --- NESSUNA MODIFICA ALLA LOGICA DI STATO ---
+  final GameService _gameService = GameService();
+  final AuthService _authService = AuthService();
+
   final TextEditingController _partyCodeController = TextEditingController();
   final TextEditingController _placeController = TextEditingController();
   final TextEditingController _objectController = TextEditingController();
@@ -191,6 +195,16 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                     ),
                     onPressed: _isButtonEnabled ? () async {
                       // Show success feedback
+                      bool partyJoined =  await _gameService.joinPartyByPartyCode(
+                        _partyCodeController.text, 
+                        _placeController.text,
+                        _objectController.text,
+                        _authService.currentUser,);
+
+                      if (!partyJoined) {
+                        SnackBarHelper.showError(context, "Not joined game '${_partyCodeController.text}'!");
+                        return;
+                      }
                       SnackBarHelper.showSuccess(context, "Successfully joined game '${_partyCodeController.text}'!");
                       
                       // Wait a moment for the snackbar, then navigate

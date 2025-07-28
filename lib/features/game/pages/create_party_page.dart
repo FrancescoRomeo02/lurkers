@@ -210,6 +210,17 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                         return;
                       }
                       SnackBarHelper.showSuccess(context, "Game '${_partyCodeController.text}' created successfully!");
+                      bool partyJoin = await _gameService.joinPartyByPartyCode(
+                        _partyCodeController.text, 
+                        _placeController.text,
+                        _objectController.text,
+                        _authService.currentUser,);
+
+                      if (!partyJoin ) {
+                        SnackBarHelper.showError(context, "Failed to join game '${_partyCodeController.text}'.");
+                        return;
+                      }
+                      SnackBarHelper.showSuccess(context, "Successfully joined game '${_partyCodeController.text}'!");
                       
                       // Wait a moment for the snackbar, then navigate
                       await Future.delayed(const Duration(milliseconds: 1000));

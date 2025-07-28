@@ -20,21 +20,56 @@ class GameService {
     }
   }
 
-  /// Join a Party by party code : DA CONTROLLARE
-  Future<void> joinParty(String partyCode, String nickname) async {
+  /// Join a Party by party code
+
+  // Get the party id from the party code
+  Future<int> getPartyIdByCode(String partyCode) async {
     try {
-      await _supabase
-          .from('game_sessions')
-          .insert({
-            'party_code': partyCode,
-            'nickname': nickname,
-          })
-          .select()
-          .single();
+      final response = await _supabase
+          .from('parties')
+          .select('id')
+          .eq('code', partyCode)
+          .maybeSingle();
+
+      if (response == null) {
+        print('No party found with code: $partyCode');
+        return 0;
+      }
+
+      return response['id'];
     } catch (e) {
-      throw Exception('Failed to join party: $e');
+      print('Error fetching party ID: $e');
+      return 0;
     }
   }
+
+  Future<bool> joinPartyByPartyCode(
+    String partyCode,
+    String location,
+    String item,
+    dynamic user,
+    ) async {
+    try {
+      int partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return false;
+      }
+      await _supabase
+      .from('party_players')
+      .insert({
+        'party_id':partyId,
+        'player_id':user.id,
+        'insert_location': location,
+        'insert_item': item,
+        'status': 'waiting',
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+
 
   /// Recupera tutti i giocatori di una sessione
   Future<List<GamePlayer>> getGamePlayers(String gameCode) async {
