@@ -91,6 +91,26 @@ class GameService {
     }
   }
 
+  /// Check if user is the host of a party
+  Future<bool> isUserHostOfParty(String partyCode, dynamic user) async {
+    try {
+      final response = await _supabase
+          .from('parties')
+          .select('host_id')
+          .eq('code', partyCode)
+          .maybeSingle();
+
+      if (response == null) {
+        return false;
+      }
+
+      return response['host_id'] == user.id;
+    } catch (e) {
+      print('Error checking if user is host: $e');
+      return false;
+    }
+  }
+
   /// Join or rejoin a party - handles both first time and returning users
   Future<Map<String, dynamic>> joinOrRejoinParty(
     String partyCode,
@@ -106,8 +126,12 @@ class GameService {
           'success': false,
           'error': 'Party not found',
           'requiresData': false,
+          'isHost': false,
         };
       }
+
+      // Check if user is the host of this party
+      final isHost = await isUserHostOfParty(partyCode, user);
 
       // Check if user is already in the party
       final isAlreadyInParty = await isUserInParty(partyCode, user);
@@ -118,7 +142,8 @@ class GameService {
           'success': true,
           'error': null,
           'requiresData': false,
-          'message': 'Welcome back to the party!',
+          'isHost': isHost,
+          'message': isHost ? 'Welcome back, Game Master!' : 'Welcome back to the party!',
         };
       } else {
         // User is not in party yet
@@ -128,6 +153,7 @@ class GameService {
             'success': false,
             'error': null,
             'requiresData': true,
+            'isHost': isHost,
             'message': 'Please provide your location and item to join the party',
           };
         } else {
@@ -137,7 +163,10 @@ class GameService {
             'success': joinSuccess,
             'error': joinSuccess ? null : 'Failed to join party',
             'requiresData': false,
-            'message': joinSuccess ? 'Successfully joined the party!' : null,
+            'isHost': isHost,
+            'message': joinSuccess 
+                ? (isHost ? 'Successfully rejoined as Game Master!' : 'Successfully joined the party!')
+                : null,
           };
         }
       }
@@ -147,6 +176,7 @@ class GameService {
         'success': false,
         'error': 'An error occurred: $e',
         'requiresData': false,
+        'isHost': false,
       };
     }
   }

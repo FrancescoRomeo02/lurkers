@@ -236,7 +236,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                                   partyCode: _partyCodeController.text,
                                   location: _showLocationFields ? _placeController.text : '',
                                   evidence: _showLocationFields ? _objectController.text : '',
-                                  isHost: false,
+                                  isHost: result['isHost'] ?? false, // Usa il valore dal risultato
                                 ),
                               ),
                             );
