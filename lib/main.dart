@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
       // Flutter genererà una palette completa da questo colore.
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8B0000),
+          seedColor: const Color(0xFF005B41),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
 
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF640000),
+          seedColor: const Color(0xFF004225),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,

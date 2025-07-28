@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
+import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
+import 'package:lurkers/features/game/widgets/lobby_other_player_card.dart';
 
 
 class PartyLobbyPage extends StatefulWidget {
@@ -142,79 +144,13 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                                 SnackBarHelper.showSuccess(context, 'Game code copied to clipboard!');
                               },
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.share),
-                              onPressed: () {
-                                // Share game code
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-            
-                    const SizedBox(height: 16),
-            
-                    // Game Info
-                    Text(
-                      'Assassination Scenario',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on, color: Colors.red),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Target Location',
-                                        style: TextStyle(fontWeight: FontWeight.w600),
-                                      ),
-                                      Text(widget.location),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.inventory, color: Colors.orange),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Required Object',
-                                        style: TextStyle(fontWeight: FontWeight.w600),
-                                      ),
-                                      Text(widget.evidence),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
                         ),
                       ),
                     ),
                     
                     const SizedBox(height: 16),
-                    
+
                     // Players List
                     Text(
                       'Players in the Hunt',
@@ -231,24 +167,29 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: widget.isHost 
-                                    ? Theme.of(context).colorScheme.primary 
-                                    : Theme.of(context).colorScheme.secondary,
-                                  child: Text(
-                                    nickname!.isNotEmpty ? nickname![0].toUpperCase() : '?',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                title: Text(nickname!),
-                                subtitle: Text(widget.isHost ? 'Game Master' : 'Assassin'),
-                                trailing: widget.isHost ? const Icon(Icons.star, color: Colors.amber) : null,
+                              // Current player (detailed view)
+                              LobbyCurrentPlayerCard(
+                                nickname: nickname!,
+                                evidence: widget.evidence,
+                                location: widget.location,
+                                isHost: widget.isHost,
                               ),
+                    
                               const Divider(),
+
+                              // Example of other players (simplified view)
+                              // TODO: Replace with actual player list from backend
+                              LobbyOtherPlayerCard(
+                                nickname: "Player2",
+                                isHost: false,
+                              ),
+                              LobbyOtherPlayerCard(
+                                nickname: "Player3", 
+                                isHost: false,
+                              ),
+
+                              const SizedBox(height: 8),
+
                               const Text(
                                 'Waiting for more assassins to join...',
                                 style: TextStyle(
