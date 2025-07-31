@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:lurkers/core/utils/toast_helper.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
+import 'package:lurkers/features/game/models/game_mission.dart';
 import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
@@ -63,10 +62,8 @@ class _GamePageState extends State<GamePage> {
   }
 
     void _fetchPlayers() async {
-      print('Fetching players for party: ${widget.partyCode}');
       setState(() => _playersLoading = true);
       final players = await _gameService.getPartyPlayers(widget.partyCode);
-      print('Fetched ${players.length} players for party: ${widget.partyCode}');
       
       setState(() {
         _players = players;
@@ -112,7 +109,7 @@ class _GamePageState extends State<GamePage> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('Game: ${widget.partyCode}'),
+        title: Text('Live Game'),
         centerTitle: true,
         actions: [
           if (isHost)
@@ -150,36 +147,29 @@ class _GamePageState extends State<GamePage> {
                         padding: const EdgeInsets.all(16.0),
                         child: Row(
                           children: [
-                            const Icon(Icons.key, size: 24),
-                            const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Game Code',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                              child: Center(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Your State',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    widget.partyCode,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontFamily: 'monospace',
-                                      fontWeight: FontWeight.bold,
+                                    Text(
+                                      'In game',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontFamily: 'monospace',
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.copy),
-                              onPressed: () {
-                                Clipboard.setData(ClipboardData(text: widget.partyCode));
-                                SnackBarHelper.showSuccess(context, 'Game code copied to clipboard!');
-                              },
                             ),
                           ],
                         ),
@@ -205,11 +195,27 @@ class _GamePageState extends State<GamePage> {
                           child: Column(
                             children: [
                               // Current player (detailed view)
-                              LobbyCurrentPlayerCard(
-                                nickname: nickname!,
-                                evidence: 'test evidence',
-                                location: 'Test Location',
-                                isHost: isHost,
+                              FutureBuilder<List<GameMission>>(
+                                future: _gameService.getCurrentPlayerMissionInfo(widget.partyCode, _authService.currentUser!.id),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(child: CircularProgressIndicator());
+                                  }
+                                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                                    return const Center(child: Text('Error loading mission info'));
+                                  }
+                                  final mission = snapshot.data!.first;
+                                  final targetName = _players.firstWhere(
+                                    (player) => player.playerId == mission.targetId,
+                                    ).userInfo?['display_name'] ?? 'Unknown';
+
+                                  return LobbyCurrentPlayerCard(
+                                    nickname: targetName,
+                                    evidence: mission.item,
+                                    location: mission.location,
+                                    isHost: isHost,
+                                  );
+                                },
                               ),
                     
                               const Divider(),
@@ -261,52 +267,11 @@ class _GamePageState extends State<GamePage> {
                                   },
                                 ),
                               ),
-
-                              const SizedBox(height: 8),
-
-                              const Text(
-                                'Waiting for more assassins to join...',
-                                style: TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey,
-                                ),
-                              ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    
-                    const SizedBox(height: 16),
-            
-                    // Action Buttons
-                    if (isHost) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Start Hunt'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          onPressed: () {
-                            // Start hunt logic
-                          },
-                        ),
-                      ),
-                    ] else ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.hourglass_empty),
-                          label: const Text('Waiting for Game Master to Start'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          onPressed: null,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

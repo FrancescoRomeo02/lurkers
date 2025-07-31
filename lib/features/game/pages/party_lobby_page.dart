@@ -70,10 +70,8 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
   }
 
     void _fetchPlayers() async {
-      print('Fetching players for party: ${widget.partyCode}');
       setState(() => _playersLoading = true);
       final players = await _gameService.getPartyPlayers(widget.partyCode);
-      print('Fetched ${players.length} players for party: ${widget.partyCode}');
       
       setState(() {
         _players = players;

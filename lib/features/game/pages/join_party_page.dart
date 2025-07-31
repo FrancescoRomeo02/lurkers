@@ -55,7 +55,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
     _objectController.dispose();
     super.dispose();
   }
-  // --- FINE DELLA LOGICA DI STATO (INVARIATA) ---
+
 
   @override
   Widget build(BuildContext context) {
