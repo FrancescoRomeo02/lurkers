@@ -13,7 +13,7 @@ class LobbyOtherPlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nickname = player.userInfo?['display_name'] ?? 'Unknown Player';
-    final isOnline = false; // Placeholder for online status, replace with actual logic if needed
+    final playerStatus = player.userInfo?['status'] ?? 'waiting'; 
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -108,11 +108,19 @@ class LobbyOtherPlayerCard extends StatelessWidget {
               ),
             ),
             
-            // Status icon
+            // Status icon (waiting/alive/dead)
             Icon(
-              isOnline ? Icons.circle : Icons.circle_outlined,
-              color: isOnline ? Colors.green : Colors.grey,
-              size: 12,
+              playerStatus == 'waiting'
+                  ? Icons.hourglass_empty
+                  : playerStatus == 'alive'
+                      ? Icons.check_circle
+                      : Icons.cancel,
+              color: playerStatus == 'waiting'
+                  ? Colors.amber
+                  : playerStatus == 'alive'
+                      ? Colors.green
+                      : Colors.red,
+              size: 20,
             ),
           ],
         ),

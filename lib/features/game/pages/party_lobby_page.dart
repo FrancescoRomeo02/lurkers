@@ -115,6 +115,8 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
         ),
       );
     }
+
+    print('all the widget props: ${widget.partyCode}, ${widget.location}, ${widget.evidence}, ${widget.isHost}');
     
     return Scaffold(
       appBar: AppBar(

@@ -117,12 +117,12 @@ class GameService {
       }
 
       final response = await _supabase
-          .from('party_players')
-          .select('insert_location, insert_item')
+          .from('lobby_submissions')
+          .select('submitted_location, submitted_item')
           .eq('party_id', partyId)
           .eq('player_id', user.id)
           .maybeSingle();
-
+      print('User party data: $response');
       return response;
     } catch (e) {
       return null;
@@ -171,8 +171,8 @@ class GameService {
           'error': null,
           'requiresData': false,
           'isHost': isHost,
-          'location': userData?['insert_location'] ?? '',
-          'item': userData?['insert_item'] ?? '',
+          'location': userData?['submitted_location'] ?? '',
+          'item': userData?['submitted_item'] ?? '',
           'message': isHost ? 'Welcome back, Game Master!' : 'Welcome back to the party!',
         };
       } else {
