@@ -5,8 +5,8 @@ import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/models/lobby_player.dart';
 import 'package:lurkers/features/game/pages/game_page.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
-import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
-import 'package:lurkers/features/game/widgets/lobby_other_player_card.dart';
+import 'package:lurkers/features/game/widgets/current_player_card.dart';
+import 'package:lurkers/features/game/widgets/other_player_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 

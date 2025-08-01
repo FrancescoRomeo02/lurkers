@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
+import 'package:lurkers/features/game/widgets/current_player_card.dart';
+import 'package:lurkers/features/game/widgets/other_player_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 
@@ -183,32 +185,31 @@ class _GamePageState extends State<GamePage> {
                     ),
                     
                     const SizedBox(height: 12),
-                    
-/*                     Expanded(
+                    Expanded(
                       child: Card(
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
                               // Current player (detailed view)
-                              FutureBuilder<List<GameMission>>(
-                                future: _gameService.getCurrentPlayerMissionInfo(widget.partyCode, _authService.currentUser!.id),
+                              FutureBuilder<PartyPlayer>(
+                                future: _gameService.getPartyPlayer(widget.partyCode, _authService.currentUser),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return const Center(child: CircularProgressIndicator());
                                   }
-                                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                                  if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                                     return const Center(child: Text('Error loading mission info'));
                                   }
-                                  final mission = snapshot.data!.first;
+                                  final mission = snapshot.data!;
                                   final targetName = _players.firstWhere(
                                     (player) => player.playerId == mission.targetId,
                                     ).userInfo?['display_name'] ?? 'Unknown';
 
-                                  return LobbyCurrentPlayerCard(
+                                  return CurrentPlayerCard(
                                     nickname: targetName,
-                                    evidence: mission.item,
-                                    location: mission.location,
+                                    evidence: mission.insertItem,
+                                    location: mission.insertLocation,
                                     isHost: isHost,
                                   );
                                 },
@@ -252,7 +253,7 @@ class _GamePageState extends State<GamePage> {
                                           future: _gameService.isUserHostOfParty(widget.partyCode, player),
                                           builder: (context, hostSnapshot) {
                                             final isPlayerHost = hostSnapshot.data ?? false;
-                                            return LobbyOtherPlayerCard(
+                                            return OtherPlayerCard(
                                               player: player,
                                               isHost: isPlayerHost,
                                             );
@@ -267,7 +268,7 @@ class _GamePageState extends State<GamePage> {
                           ),
                         ),
                       ),
-                    ), */
+                    ),
                   ],
                 ),
               ),
