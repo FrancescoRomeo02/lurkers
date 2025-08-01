@@ -108,6 +108,38 @@ class GameService {
     }
   }
 
+  /// Check party status and return status information
+  Future<Map<String, dynamic>> getPartyStatus(String partyCode) async {
+    try {
+      final response = await _supabase
+          .from('parties')
+          .select('status')
+          .eq('code', partyCode)
+          .maybeSingle();
+      
+      if (response == null) {
+        return {
+          'exists': false,
+          'status': null,
+          'isActive': false,
+        };
+      }
+      
+      final status = response['status'];
+      return {
+        'exists': true,
+        'status': status,
+        'isActive': status == 'active',
+      };
+    } catch (e) {
+      return {
+        'exists': false,
+        'status': null,
+        'isActive': false,
+      };
+    }
+  }
+
   /// Get user's data from party_players table
   Future<Map<String, dynamic>?> getUserPartyData(String partyCode, dynamic user) async {
     try {
@@ -129,24 +161,21 @@ class GameService {
     }
   }
 
-  /// Join or rejoin a party - handles both first time and returning users
-  Future<Map<String, dynamic>> joinOrRejoinParty(
-    String partyCode,
-    dynamic user, {
-    String? location,
-    String? item,
-  }) async {
+  /// Process joining a party with comprehensive checks
+  Future<Map<String, dynamic>> processJoinParty(String partyCode, dynamic user, {String? location, String? item}) async {
     try {
-      // First check if party exists
-      final partyId = await getPartyIdByCode(partyCode);
-      if (partyId == 0) {
+      // First check if party exists and get its status
+      final partyStatusInfo = await getPartyStatus(partyCode);
+      if (!partyStatusInfo['exists']) {
         return {
           'success': false,
           'error': 'Party not found',
           'requiresData': false,
           'isHost': false,
+          'isActive': false,
         };
       }
+
       // Check if user is the host of this party
       final isHost = await isUserHostOfParty(partyCode, user);
       print('Is user host: $isHost');
@@ -155,15 +184,11 @@ class GameService {
       final isAlreadyInParty = await isUserInLobby(partyCode, user);
       print('Is user already in party: $isAlreadyInParty');
 
-      // Check if the party is active
-      final partyResponse = await _supabase
-          .from('parties')
-          .select('status')
-          .eq('code', partyCode)
-          .maybeSingle();
+      final partyStatus = partyStatusInfo['status'];
+      final isActive = partyStatusInfo['isActive'];
       
       // If user is already in the party and the party is not finished rejoin them
-      if (isAlreadyInParty && partyResponse?['status'] != 'finished') {
+      if (isAlreadyInParty && partyStatus != 'finished') {
         // User is already in party, get their original data
         final userData = await getUserPartyData(partyCode, user);
         return {
@@ -171,6 +196,8 @@ class GameService {
           'error': null,
           'requiresData': false,
           'isHost': isHost,
+          'isActive': isActive,
+          'status': partyStatus,
           'location': userData?['submitted_location'] ?? '',
           'item': userData?['submitted_item'] ?? '',
           'message': isHost ? 'Welcome back, Game Master!' : 'Welcome back to the party!',
@@ -184,6 +211,8 @@ class GameService {
             'error': null,
             'requiresData': true,
             'isHost': isHost,
+            'isActive': isActive,
+            'status': partyStatus,
             'message': 'Please provide your location and item to join the party',
           };
         } else {
@@ -194,6 +223,8 @@ class GameService {
             'error': joinSuccess ? null : 'Failed to join party',
             'requiresData': false,
             'isHost': isHost,
+            'isActive': isActive,
+            'status': partyStatus,
             'location': joinSuccess ? location : '',
             'item': joinSuccess ? item : '',
             'message': joinSuccess 
@@ -208,6 +239,7 @@ class GameService {
         'error': 'An error occurred: $e',
         'requiresData': false,
         'isHost': false,
+        'isActive': false,
       };
     }
   }
@@ -234,8 +266,28 @@ class GameService {
           .toList();
 
     } catch (e) {
-      print('Error getting lobby players: $e');
       throw Exception('Failed to get game players: $e');
+    }
+  }
+
+  Future<List<PartyPlayer>> getPartyPlayers(String partyCode) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return [];
+      }
+      final response = await _supabase
+          .from('party_players')
+          .select()
+          .eq('party_id', partyId);
+      for (final item in response) {
+        item['user_info'] = await getUserInfoByUuid(item['player_id']);
+      }
+      return (response as List<dynamic>)
+          .map((item) => PartyPlayer.fromJson(item))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get party players: $e');
     }
   }
 
@@ -261,25 +313,21 @@ class GameService {
         print('Party not found for code: $partyCode');
         return false;
       }
-      // Update all players' status to 'active'
-      await _supabase
-          .from('party_players')
-          .update({'status': 'active'})
-          .eq('party_id', partyId);
       
-      //TODO: Set the party status to 'active'
-     /*  await _supabase
+      // Set the party status to 'active'
+      await _supabase
           .from('parties')
           .update({'status': 'active'})
-          .eq('id', partyId); */
-        
-      // Set the starting mission for the party}
+          .eq('id', partyId);
+
+      // Get all players in the lobby
       final players = await getLobbyPlayers(partyCode);
       if (players.isEmpty) {
         print('No players found in the party.');
         return false;
       }
 
+      // Select items and locations from players
       final partyItem = [];
       final partyLocation = [];
 
@@ -293,49 +341,21 @@ class GameService {
       partyItem.shuffle();
       partyLocation.shuffle();
 
-      // Assign to each player a target player
-      for (int i = 0; i < players.length; i++) {
-        final targetPlayer = players[(i + 1) % players.length]; // Next player
-        final missionItem = partyItem[i];
-        final missionLocation = partyLocation[i];
-        await setMission(
-          partyId,
-          players[i].playerId,
-          targetPlayer.playerId,
-          missionItem,
-          missionLocation,
-        );
+      // add all the players into the party_players table with their items, locations and targets
+      for (final player in players) {
+        final targetIndex = (players.indexOf(player) + 1) % players.length; // Circular target selection
+        await _supabase.from('party_players').insert({
+          'party_id': partyId,
+          'player_id': player.playerId,
+          'is_alive': true,
+          'target_id': players[targetIndex].playerId, // Set the target player
+          'mission_item': partyItem[players.indexOf(player)],
+          'mission_location': partyLocation[players.indexOf(player)],
+        });
       }
       return true;
     } catch (e) {
       print('Error starting game: $e');
-      return false;
-    }
-  }
-
-  Future<bool> setMission(
-    int partyId,
-    String userId,
-    String targetId,
-    String missionItem,
-    String missionLocation,
-  ) async {
-    try {
-      print('Setting mission for user $userId in party $partyId');
-      print('Target: $targetId, Item: $missionItem, Location: $missionLocation');
-      await _supabase
-          .from('missions')
-          .insert({
-            'party_id': partyId,
-            'user_id': userId,
-            'target_id': targetId,
-            'item': missionItem,
-            'location': missionLocation,
-            'completed': false,
-          });
-      return true;
-    } catch (e) {
-      print('Error setting mission: $e');
       return false;
     }
   }

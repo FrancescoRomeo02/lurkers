@@ -1,0 +1,66 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.elimination_events (
+  id bigint NOT NULL DEFAULT nextval('elimination_events_id_seq'::regclass),
+  party_id bigint NOT NULL,
+  actor_id uuid NOT NULL,
+  victim_id uuid NOT NULL,
+  mission_target_id uuid NOT NULL,
+  mission_item text NOT NULL,
+  mission_location text NOT NULL,
+  event_type text NOT NULL,
+  witness_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT elimination_events_pkey PRIMARY KEY (id),
+  CONSTRAINT elimination_events_victim_id_fkey FOREIGN KEY (victim_id) REFERENCES public.profiles(id),
+  CONSTRAINT elimination_events_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.parties(id),
+  CONSTRAINT elimination_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.profiles(id),
+  CONSTRAINT elimination_events_mission_target_id_fkey FOREIGN KEY (mission_target_id) REFERENCES public.profiles(id),
+  CONSTRAINT elimination_events_witness_id_fkey FOREIGN KEY (witness_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.lobby_submissions (
+  id bigint NOT NULL DEFAULT nextval('lobby_submissions_id_seq'::regclass),
+  party_id bigint NOT NULL,
+  player_id uuid NOT NULL,
+  submitted_item text NOT NULL,
+  submitted_location text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT lobby_submissions_pkey PRIMARY KEY (id),
+  CONSTRAINT lobby_submissions_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.parties(id),
+  CONSTRAINT lobby_submissions_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.parties (
+  id bigint NOT NULL DEFAULT nextval('parties_id_seq'::regclass),
+  code text NOT NULL UNIQUE,
+  host_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'inactive'::text,
+  winner_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parties_pkey PRIMARY KEY (id),
+  CONSTRAINT parties_winner_id_fkey FOREIGN KEY (winner_id) REFERENCES public.profiles(id),
+  CONSTRAINT parties_host_id_fkey FOREIGN KEY (host_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.party_players (
+  id bigint NOT NULL DEFAULT nextval('party_players_id_seq'::regclass),
+  party_id bigint NOT NULL,
+  player_id uuid NOT NULL,
+  is_alive boolean NOT NULL DEFAULT true,
+  target_id uuid NOT NULL,
+  mission_item text NOT NULL,
+  mission_location text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT party_players_pkey PRIMARY KEY (id),
+  CONSTRAINT party_players_target_id_fkey FOREIGN KEY (target_id) REFERENCES public.profiles(id),
+  CONSTRAINT party_players_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.parties(id),
+  CONSTRAINT party_players_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  display_name text,
+  email text,
+  avatar_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id)
+);

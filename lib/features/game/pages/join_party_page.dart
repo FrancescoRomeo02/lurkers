@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/pages/party_lobby_page.dart';
+import 'package:lurkers/features/game/pages/game_page.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 
@@ -212,7 +213,7 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
                       });
 
                       try {
-                        final result = await _gameService.joinOrRejoinParty(
+                        final result = await _gameService.processJoinParty(
                           _partyCodeController.text,
                           _authService.currentUser,
                           location: _showLocationFields ? _placeController.text : null,
@@ -221,25 +222,45 @@ class _JoinPartyScreenState extends State<JoinPartyScreen> {
 
                         if (result['success'] == true) {
                           // Successfully joined or rejoined
-                          SnackBarHelper.showSuccess(
-                            context, 
-                            result['message'] ?? "Successfully joined game '${_partyCodeController.text}'!"
-                          );
+                          if (result['isActive'] == true) {
+                            SnackBarHelper.showSuccess(
+                              context, 
+                              "Game is already active! Joining the hunt..."
+                            );
+                          } else {
+                            SnackBarHelper.showSuccess(
+                              context, 
+                              result['message'] ?? "Successfully joined game '${_partyCodeController.text}'!"
+                            );
+                          }
                           
                           // Wait a moment for the snackbar, then navigate
                           await Future.delayed(const Duration(milliseconds: 1000));
                           
                           if (context.mounted) {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => PartyLobbyPage(
-                                  partyCode: _partyCodeController.text,
-                                  location: result['location'] ?? (_showLocationFields ? _placeController.text : ''),
-                                  evidence: result['item'] ?? (_showLocationFields ? _objectController.text : ''),
-                                  isHost: result['isHost'] ?? false,
+                            // Check if the party is active and navigate accordingly
+                            if (result['isActive'] == true) {
+                              // Party is active, navigate directly to GamePage
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => GamePage(
+                                    partyCode: _partyCodeController.text,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            } else {
+                              // Party is not active, navigate to lobby
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => PartyLobbyPage(
+                                    partyCode: _partyCodeController.text,
+                                    location: result['location'] ?? (_showLocationFields ? _placeController.text : ''),
+                                    evidence: result['item'] ?? (_showLocationFields ? _objectController.text : ''),
+                                    isHost: result['isHost'] ?? false,
+                                  ),
+                                ),
+                              );
+                            }
                           }
                         } else if (result['requiresData'] == true) {
                           // Need to show location and item fields
