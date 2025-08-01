@@ -116,7 +116,6 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
       );
     }
 
-    print('all the widget props: ${widget.partyCode}, ${widget.location}, ${widget.evidence}, ${widget.isHost}');
     
     return Scaffold(
       appBar: AppBar(
@@ -213,7 +212,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                           child: Column(
                             children: [
                               // Current player (detailed view)
-                              LobbyCurrentPlayerCard(
+                              CurrentPlayerCard(
                                 nickname: nickname!,
                                 evidence: widget.evidence,
                                 location: widget.location,
@@ -258,7 +257,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                                           future: _gameService.isUserHostOfParty(widget.partyCode, player),
                                           builder: (context, hostSnapshot) {
                                             final isPlayerHost = hostSnapshot.data ?? false;
-                                            return LobbyOtherPlayerCard(
+                                            return OtherPlayerCard(
                                               player: player,
                                               isHost: isPlayerHost,
                                             );

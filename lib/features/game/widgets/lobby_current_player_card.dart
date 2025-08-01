@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class LobbyCurrentPlayerCard extends StatelessWidget {
+class CurrentPlayerCard extends StatelessWidget {
   final String nickname;
   final String evidence;
   final String location;
   final bool isHost;
 
-  const LobbyCurrentPlayerCard({
+  const CurrentPlayerCard({
     super.key,
     required this.nickname,
     required this.evidence,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-class LobbyOtherPlayerCard extends StatelessWidget {
+class OtherPlayerCard extends StatelessWidget {
   final dynamic player;
   final bool isHost;
   
-  const LobbyOtherPlayerCard({
+  const OtherPlayerCard({
     super.key,
     required this.player,
     this.isHost = false,

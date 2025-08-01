@@ -158,7 +158,7 @@ class GameService {
     }
   }
 
-  /// Get user's data from lobby_submissions table
+  /// Get user's data from party_players table - improved error handling
   Future<Map<String, dynamic>?> getUserLobbyData(String partyCode, dynamic user) async {
     try {
       final partyId = await getPartyIdByCode(partyCode);
@@ -293,34 +293,6 @@ class GameService {
     }
   }
 
-  Future<PartyPlayer> getPartyPlayer(String partyCode, dynamic user) async {
-    try {
-      final partyId = await getPartyIdByCode(partyCode);
-      if (partyId == 0) {
-        throw Exception('Party not found for code: $partyCode');
-      }
-      final response = await _supabase
-          .from('party_players')
-          .select('''
-            *,
-            profiles!party_players_player_id_fkey(id, display_name, email, avatar_url)
-          ''')
-          .eq('party_id', partyId)
-          .eq('player_id', user.id)
-          .maybeSingle();
-      if (response == null) {
-        throw Exception('Player not found in party: $partyCode');
-      } 
-        return PartyPlayer.fromJson({
-          ...response,
-          'user_info': response['profiles'],
-        });
-    } catch (e) {
-      _logError('getPartyPlayer', e);
-      throw Exception('Failed to get party player: $e');
-    }
-  }
-
   /// Get all party players - OPTIMIZED to reduce N+1 queries
   Future<List<PartyPlayer>> getPartyPlayers(String partyCode) async {
     try {
@@ -330,12 +302,11 @@ class GameService {
       }
       
       // Optimized query using JOIN to avoid N+1 queries
-      // Specify the exact foreign key relationship to avoid ambiguity
       final response = await _supabase
           .from('party_players')
           .select('''
             *,
-            profiles!party_players_player_id_fkey(id, display_name, email, avatar_url)
+            profiles!inner(id, display_name, email, avatar_url)
           ''')
           .eq('party_id', partyId);
 

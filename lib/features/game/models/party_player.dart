@@ -1,12 +1,13 @@
 class PartyPlayer {
   final int id;
-  final DateTime createdAt;
   final int partyId;
-  final bool isAlive; // Default to true, assuming player is alive when created
   final String playerId;
+  final bool isAlive; // Default to true, assuming player is alive when created
+  final String targetId;
   final String insertLocation;
   final String insertItem;
-    final Map<String, dynamic>? userInfo;
+  final DateTime createdAt;
+  final Map<String, dynamic>? userInfo;
 
 
   const PartyPlayer({
@@ -18,6 +19,7 @@ class PartyPlayer {
     this.userInfo, // Opzionale, può essere null se non sono disponibili informazioni del profilo
     required this.insertLocation,
     required this.insertItem,
+    required this.targetId,
   });
 
   /// Factory constructor per creare un PartyPlayer da JSON (Supabase response)
@@ -31,6 +33,7 @@ class PartyPlayer {
       userInfo: json['user_info'] as Map<String, dynamic>?, // Aggiunto per le informazioni del profilo
       insertLocation: json['mission_location'] as String,
       insertItem: json['mission_item'] as String,
+      targetId: json['target_id'] as String, // Aggiunto per il target del giocatore
     );
   }
 
@@ -45,12 +48,13 @@ class PartyPlayer {
       'user_info': userInfo, // Includi le informazioni del profilo se disponibili
       'insert_location': insertLocation,
       'insert_item': insertItem,
+      'target_id': targetId, // Includi il target del giocatore
     };
   }
 
   @override
   String toString() {
-    return 'PartyPlayer(id: $id, partyId: $partyId, is alive: $isAlive, playerId: $playerId, userInfo: $userInfo location: $insertLocation, item: $insertItem)';
+    return 'PartyPlayer(id: $id, partyId: $partyId, is alive: $isAlive, playerId: $playerId, userInfo: $userInfo location: $insertLocation, item: $insertItem, targetId: $targetId, createdAt: $createdAt)';
   }
 
   @override
