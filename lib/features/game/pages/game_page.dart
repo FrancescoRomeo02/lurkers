@@ -221,48 +221,47 @@ class _GamePageState extends State<GamePage> {
                               Expanded(
                                 child: _playersLoading 
                                     ? const Center(child: CircularProgressIndicator())
-                                    : FutureBuilder<List<PartyPlayer>>(
-                                    initialData: _players,
-                                    future: Future.value(_players),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState == ConnectionState.waiting) {
-                                      return const Center(child: CircularProgressIndicator());
-                                    }
-                                    if (snapshot.hasError) {
-                                      return Center(child: Text('Error: ${snapshot.error}'));
-                                    }
-                                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                                      return const Center(child: Text('No other players in the game'));
-                                    }
-
-                                    final players = snapshot.data!;
-                                    // Filtra l'utente corrente dalla lista degli altri giocatori
-                                    final currentUserId = _authService.currentUser?.id;
-                                    final otherPlayers = players.where((player) => 
-                                        player.playerId != currentUserId
-                                    ).toList();
-                                    
-                                    if (otherPlayers.isEmpty) {
-                                      return const Center(child: Text('No other players in the game'));
-                                    }
-                                    return ListView.builder(
-                                      itemCount: otherPlayers.length,
-                                      itemBuilder: (context, index) {
-                                        final player = otherPlayers[index];
-                                        return FutureBuilder<bool>(
-                                          future: _gameService.isUserHostOfParty(widget.partyCode, player),
-                                          builder: (context, hostSnapshot) {
-                                            final isPlayerHost = hostSnapshot.data ?? false;
-                                            return OtherPlayerCard(
-                                              player: player,
-                                              isHost: isPlayerHost,
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
+                                    : FutureBuilder<PartyPlayer>(
+                                        future: _gameService.getPartyPlayer(widget.partyCode, _authService.currentUser),
+                                        builder: (context, missionSnapshot) {
+                                          if (missionSnapshot.connectionState == ConnectionState.waiting) {
+                                            return const Center(child: CircularProgressIndicator());
+                                          }
+                                          if (missionSnapshot.hasError || !missionSnapshot.hasData) {
+                                            return const Center(child: Text('Error loading mission info'));
+                                          }
+                                          
+                                          final mission = missionSnapshot.data!;
+                                          final currentUserId = _authService.currentUser?.id;
+                                          final targetId = mission.targetId;
+                                          
+                                          // Filtra sia l'utente corrente che il suo target dalla lista degli altri giocatori
+                                          final otherPlayers = _players.where((player) => 
+                                              player.playerId != currentUserId && player.playerId != targetId
+                                          ).toList();
+                                          
+                                          if (otherPlayers.isEmpty) {
+                                            return const Center(child: Text('No other players in the game'));
+                                          }
+                                          
+                                          return ListView.builder(
+                                            itemCount: otherPlayers.length,
+                                            itemBuilder: (context, index) {
+                                              final player = otherPlayers[index];
+                                              return FutureBuilder<bool>(
+                                                future: _gameService.isUserHostOfParty(widget.partyCode, player),
+                                                builder: (context, hostSnapshot) {
+                                                  final isPlayerHost = hostSnapshot.data ?? false;
+                                                  return OtherPlayerCard(
+                                                    player: player,
+                                                    isHost: isPlayerHost,
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
                               ),
                             ],
                           ),
