@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lurkers/features/game/models/party_player.dart';
 
 class LobbyOtherPlayerCard extends StatelessWidget {
-  final PartyPlayer player;
+  final dynamic player;
   final bool isHost;
   
   const LobbyOtherPlayerCard({
@@ -14,7 +13,7 @@ class LobbyOtherPlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nickname = player.userInfo?['display_name'] ?? 'Unknown Player';
-    final isOnline = player.status == PlayerStatus.playing || player.status == PlayerStatus.waiting;
+    final isOnline = false; // Placeholder for online status, replace with actual logic if needed
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),

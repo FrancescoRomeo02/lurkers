@@ -1,46 +1,42 @@
-class PartyPlayer {
+class LobbyPlayer {
   final int id;
   final DateTime createdAt;
   final int partyId;
-  final bool isAlive; // Default to true, assuming player is alive when created
   final String playerId;
   final String insertLocation;
   final String insertItem;
-    final Map<String, dynamic>? userInfo;
+  final Map<String, dynamic>? userInfo;
 
 
-  const PartyPlayer({
+  const LobbyPlayer({
     required this.id,
     required this.createdAt,
     required this.partyId,
-    required this.isAlive,
     required this.playerId,
     this.userInfo, // Opzionale, può essere null se non sono disponibili informazioni del profilo
     required this.insertLocation,
     required this.insertItem,
   });
 
-  /// Factory constructor per creare un PartyPlayer da JSON (Supabase response)
-  factory PartyPlayer.fromJson(Map<String, dynamic> json) {
-    return PartyPlayer(
+  /// Factory constructor per creare un LobbyPlayer da JSON (Supabase response)
+  factory LobbyPlayer.fromJson(Map<String, dynamic> json) {
+    return LobbyPlayer(
       id: json['id'] as int,
       createdAt: DateTime.parse(json['created_at'] as String),
       partyId: json['party_id'] as int,
-      isAlive: json['is_alive'] as bool,
       playerId: json['player_id'] as String,
       userInfo: json['user_info'] as Map<String, dynamic>?, // Aggiunto per le informazioni del profilo
-      insertLocation: json['mission_location'] as String,
-      insertItem: json['mission_item'] as String,
+      insertLocation: json['submitted_location'] as String,
+      insertItem: json['submitted_item'] as String,
     );
   }
 
-  /// Converte il PartyPlayer in JSON per inviarlo a Supabase
+  /// Converte il LobbyPlayer in JSON per inviarlo a Supabase
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'created_at': createdAt.toIso8601String(),
       'party_id': partyId,
-      'is_alive': isAlive,
       'player_id': playerId,
       'user_info': userInfo, // Includi le informazioni del profilo se disponibili
       'insert_location': insertLocation,
@@ -50,13 +46,13 @@ class PartyPlayer {
 
   @override
   String toString() {
-    return 'PartyPlayer(id: $id, partyId: $partyId, is alive: $isAlive, playerId: $playerId, userInfo: $userInfo location: $insertLocation, item: $insertItem)';
+    return 'LobbyPlayer(id: $id, partyId: $partyId, playerId: $playerId, userInfo: $userInfo location: $insertLocation, item: $insertItem)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is PartyPlayer &&
+    return other is LobbyPlayer &&
         other.id == id &&
         other.partyId == partyId &&
         other.playerId == playerId;

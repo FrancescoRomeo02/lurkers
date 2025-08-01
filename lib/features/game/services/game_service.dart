@@ -1,5 +1,6 @@
-import 'package:lurkers/features/game/models/game_mission.dart';
-import 'package:lurkers/features/game/models/game_player.dart';
+import 'package:flutter/widgets.dart';
+import 'package:lurkers/features/game/models/lobby_player.dart';
+import 'package:lurkers/features/game/models/user.dart';
 import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,6 +16,7 @@ class GameService {
           .insert({
             'code': partyCode,
             'host_id': user.id,
+            'status': 'inactive', // Default status is 'inactive'
           });
       return true;
     } catch (e) {
@@ -42,8 +44,8 @@ class GameService {
     }
   }
 
-  // Join a party by party code
-  Future<bool> joinPartyByPartyCode(
+  // Join a lobby by party code
+  Future<bool> joinPartyLobbyByPartyCode(
     String partyCode,
     String location,
     String item,
@@ -55,13 +57,12 @@ class GameService {
         return false;
       }
       await _supabase
-      .from('party_players')
+      .from('lobby_submissions')
       .insert({
         'party_id':partyId,
         'player_id':user.id,
-        'insert_location': location,
-        'insert_item': item,
-        'status': 'waiting',
+        'submitted_item': item,
+        'submitted_location': location,
       });
       return true;
     } catch (e) {
@@ -69,8 +70,8 @@ class GameService {
     }
   }
 
-  /// Check if user is already in a party
-  Future<bool> isUserInParty(String partyCode, dynamic user) async {
+  /// Check if user is already in lobby
+  Future<bool> isUserInLobby(String partyCode, dynamic user) async {
     try {
       final partyId = await getPartyIdByCode(partyCode);
       if (partyId == 0) {
@@ -78,7 +79,7 @@ class GameService {
       }
 
       final response = await _supabase
-          .from('party_players')
+          .from('lobby_submissions')
           .select('id')
           .eq('party_id', partyId)
           .eq('player_id', user.id)
@@ -103,7 +104,6 @@ class GameService {
       }
       return response['host_id'] == user.id;
     } catch (e) {
-
       return false;
     }
   }
@@ -149,11 +149,21 @@ class GameService {
       }
       // Check if user is the host of this party
       final isHost = await isUserHostOfParty(partyCode, user);
+      print('Is user host: $isHost');
 
-      // Check if user is already in the party
-      final isAlreadyInParty = await isUserInParty(partyCode, user);
+      // Check if user is already in the lobby
+      final isAlreadyInParty = await isUserInLobby(partyCode, user);
+      print('Is user already in party: $isAlreadyInParty');
+
+      // Check if the party is active
+      final partyResponse = await _supabase
+          .from('parties')
+          .select('status')
+          .eq('code', partyCode)
+          .maybeSingle();
       
-      if (isAlreadyInParty) {
+      // If user is already in the party and the party is not finished rejoin them
+      if (isAlreadyInParty && partyResponse?['status'] != 'finished') {
         // User is already in party, get their original data
         final userData = await getUserPartyData(partyCode, user);
         return {
@@ -178,7 +188,7 @@ class GameService {
           };
         } else {
           // Have all data, can join the party
-          final joinSuccess = await joinPartyByPartyCode(partyCode, location, item, user);
+          final joinSuccess = await joinPartyLobbyByPartyCode(partyCode, location, item, user);
           return {
             'success': joinSuccess,
             'error': joinSuccess ? null : 'Failed to join party',
@@ -203,7 +213,7 @@ class GameService {
   }
 
   /// Get all party information by party code
-  Future<List<PartyPlayer>> getPartyPlayers(String partyCode) async {
+  Future<List<LobbyPlayer>> getLobbyPlayers(String partyCode) async {
     try {
       final partyId = await getPartyIdByCode(partyCode);
       if (partyId == 0) {
@@ -211,20 +221,20 @@ class GameService {
       }
 
       final response = await _supabase
-          .from('party_players')
+          .from('lobby_submissions')
           .select()
           .eq('party_id', partyId);
-
-      // Aggiungi le informazioni del profilo per ogni giocatore
+    
       for (final item in response) {
         item['user_info'] = await getUserInfoByUuid(item['player_id']);
       }
 
       return (response as List<dynamic>)
-          .map((item) => PartyPlayer.fromJson(item))
+          .map((item) => LobbyPlayer.fromJson(item))
           .toList();
 
     } catch (e) {
+      print('Error getting lobby players: $e');
       throw Exception('Failed to get game players: $e');
     }
   }
@@ -264,7 +274,7 @@ class GameService {
           .eq('id', partyId); */
         
       // Set the starting mission for the party}
-      final players = await getPartyPlayers(partyCode);
+      final players = await getLobbyPlayers(partyCode);
       if (players.isEmpty) {
         print('No players found in the party.');
         return false;
@@ -330,30 +340,4 @@ class GameService {
     }
   }
 
-  Future<List<GameMission>> getCurrentPlayerMissionInfo(String partyCode, String userId) async {
-    try {
-      final partyId = await getPartyIdByCode(partyCode);
-      if (partyId == 0) {
-        print('Party not found for code: $partyCode');
-        return [];
-      }
-      final response = await _supabase
-          .from('missions')
-          .select()
-          .eq('party_id', partyId)
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (response == null) {
-        print('No mission found for user $userId in party $partyCode');
-        return [];
-      }
-
-      return [GameMission.fromJson(response)];
-    } catch (e) {
-      // print response
-      print('Error fetching mission info: $e');
-      return [];
-    }
-}
 }

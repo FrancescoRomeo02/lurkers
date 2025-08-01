@@ -210,7 +210,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                         return;
                       }
                       SnackBarHelper.showSuccess(context, "Game '${_partyCodeController.text}' created successfully!");
-                      bool partyJoin = await _gameService.joinPartyByPartyCode(
+                      bool partyJoin = await _gameService.joinPartyLobbyByPartyCode(
                         _partyCodeController.text, 
                         _placeController.text,
                         _objectController.text,

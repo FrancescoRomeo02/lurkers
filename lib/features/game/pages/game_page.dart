@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
-import 'package:lurkers/features/game/models/game_mission.dart';
+import 'package:lurkers/features/game/models/lobby_player.dart';
 import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
@@ -27,7 +27,7 @@ class _GamePageState extends State<GamePage> {
   final GameService _gameService = GameService();
     
   late RealtimeChannel _subscription;
-  List<PartyPlayer> _players = [];
+  List<LobbyPlayer> _players = [];
   bool _playersLoading = true;
 
   String? nickname;
@@ -63,8 +63,7 @@ class _GamePageState extends State<GamePage> {
 
     void _fetchPlayers() async {
       setState(() => _playersLoading = true);
-      final players = await _gameService.getPartyPlayers(widget.partyCode);
-      
+      final players = await _gameService.getLobbyPlayers(widget.partyCode);
       setState(() {
         _players = players;
         _playersLoading = false;
@@ -188,7 +187,7 @@ class _GamePageState extends State<GamePage> {
                     
                     const SizedBox(height: 12),
                     
-                    Expanded(
+/*                     Expanded(
                       child: Card(
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
@@ -271,7 +270,7 @@ class _GamePageState extends State<GamePage> {
                           ),
                         ),
                       ),
-                    ),
+                    ), */
                   ],
                 ),
               ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lurkers/core/utils/toast_helper.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
-import 'package:lurkers/features/game/models/party_player.dart';
+import 'package:lurkers/features/game/models/lobby_player.dart';
 import 'package:lurkers/features/game/pages/game_page.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/lobby_current_player_card.dart';
@@ -35,7 +35,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
   final GameService _gameService = GameService();
     
   late RealtimeChannel _subscription;
-  List<PartyPlayer> _players = [];
+  List<LobbyPlayer> _players = [];
   bool _playersLoading = true;
 
   String? nickname;
@@ -59,19 +59,20 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
 
   void _subscribeToPlayers() {
     _subscription = Supabase.instance.client
-      .channel('public:party_players')
+      .channel('public:lobby_submissions')
       .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'party_players',
+          table: 'lobby_submissions',
           callback: (payload) => _fetchPlayers(),
         )
       .subscribe();
+
   }
 
     void _fetchPlayers() async {
       setState(() => _playersLoading = true);
-      final players = await _gameService.getPartyPlayers(widget.partyCode);
+      final players = await _gameService.getLobbyPlayers(widget.partyCode);
       
       setState(() {
         _players = players;
@@ -223,7 +224,7 @@ class _PartyLobbyPageState extends State<PartyLobbyPage> {
                               Expanded(
                                 child: _playersLoading 
                                     ? const Center(child: CircularProgressIndicator())
-                                    : FutureBuilder<List<PartyPlayer>>(
+                                    : FutureBuilder<List<LobbyPlayer>>(
                                     initialData: _players,
                                     future: Future.value(_players),
                                   builder: (context, snapshot) {

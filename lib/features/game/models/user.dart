@@ -1,31 +1,31 @@
 /// Modello per rappresentare un giocatore
-class GamePlayer {
+class User {
   final String id;
-  final String nickname;
+  final String displayName;
 
-  GamePlayer({
+  User({
     required this.id,
-    required this.nickname,
+    required this.displayName,
   });
 
-  factory GamePlayer.fromJson(Map<String, dynamic> json) {
-    return GamePlayer(
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
       id: json['id'],
-      nickname: json['nickname'],
+      displayName: json['display_name'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'nickname': nickname,
+      'display_name': displayName,
     };
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is GamePlayer &&
+      other is User &&
           runtimeType == other.runtimeType &&
           id == other.id;
 
@@ -34,7 +34,7 @@ class GamePlayer {
 
   @override
   String toString() {
-    return nickname;
+    return displayName;
 }
 
 }
