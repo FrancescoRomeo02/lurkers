@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lurkers/features/auth/services/auth_service.dart';
 import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
-import 'package:lurkers/features/game/widgets/current_player_card.dart';
-import 'package:lurkers/features/game/widgets/other_player_card.dart';
+import 'package:lurkers/features/game/widgets/target_mission_card.dart';
+import 'package:lurkers/features/game/widgets/game_player_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 
@@ -206,11 +206,13 @@ class _GamePageState extends State<GamePage> {
                                     (player) => player.playerId == mission.targetId,
                                     ).userInfo?['display_name'] ?? 'Unknown';
 
-                                  return CurrentPlayerCard(
-                                    nickname: targetName,
+                                  return TargetMissionCard(
+                                    targetName: targetName,
                                     evidence: mission.insertItem,
                                     location: mission.insertLocation,
-                                    isHost: isHost,
+                                    onEliminateTarget: () {
+                                      // TODO: Implementare logica per segnalare uccisione
+                                    },
                                   );
                                 },
                               ),
@@ -252,9 +254,12 @@ class _GamePageState extends State<GamePage> {
                                                 future: _gameService.isUserHostOfParty(widget.partyCode, player),
                                                 builder: (context, hostSnapshot) {
                                                   final isPlayerHost = hostSnapshot.data ?? false;
-                                                  return OtherPlayerCard(
+                                                  return GamePlayerCard(
                                                     player: player,
                                                     isHost: isPlayerHost,
+                                                    onReportKill: () {
+                                                      // TODO: Implementare logica per segnalare omicidio
+                                                    },
                                                   );
                                                 },
                                               );
