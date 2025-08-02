@@ -254,7 +254,7 @@ class GamePlayerCard extends StatelessWidget {
             ),
             
             // Enhanced action button
-            if (isAlive)
+            if (isAlive && onReportKill != null)
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -281,7 +281,7 @@ class GamePlayerCard extends StatelessWidget {
                   ),
                 ),
               )
-            else
+            else if (!isAlive)
               // Eliminated status icon
               Container(
                 padding: const EdgeInsets.all(8),
@@ -292,6 +292,20 @@ class GamePlayerCard extends StatelessWidget {
                 child: const Icon(
                   Icons.dangerous,
                   color: Colors.red,
+                  size: 20,
+                ),
+              )
+            else
+              // Disabled state for alive players when current user is dead
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.surfaceVariant,
+                ),
+                child: Icon(
+                  Icons.visibility_off_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 20,
                 ),
               ),

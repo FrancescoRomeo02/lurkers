@@ -272,25 +272,85 @@ class _GamePageState extends State<GamePage> {
                           children: [
                             Expanded(
                               child: Center(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'Your State',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      'In game',
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontFamily: 'monospace',
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                child: FutureBuilder<PartyPlayer>(
+                                  future: _gameService.getPartyPlayer(widget.partyCode, _authService.currentUser),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return const Column(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Your State',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          CircularProgressIndicator(),
+                                        ],
+                                      );
+                                    }
+                                    
+                                    if (snapshot.hasError || !snapshot.hasData) {
+                                      return const Column(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Your State',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Error',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontFamily: 'monospace',
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+
+                                    final player = snapshot.data!;
+                                    final isAlive = player.isAlive;
+                                    
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          'Your State',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              isAlive ? Icons.favorite : Icons.heart_broken,
+                                              color: isAlive ? Colors.green : Colors.red,
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              isAlive ? 'HUNTING' : 'ELIMINATED',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontFamily: 'monospace',
+                                                fontWeight: FontWeight.bold,
+                                                color: isAlive ? Colors.green : Colors.red,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -329,7 +389,7 @@ class _GamePageState extends State<GamePage> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              // Current player (detailed view)
+                              // Current player mission (only if alive)
                               FutureBuilder<PartyPlayer>(
                                 future: _gameService.getPartyPlayer(widget.partyCode, _authService.currentUser),
                                 builder: (context, snapshot) {
@@ -339,7 +399,53 @@ class _GamePageState extends State<GamePage> {
                                   if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                                     return const Center(child: Text('Error loading mission info'));
                                   }
+                                  
                                   final mission = snapshot.data!;
+                                  
+                                  // If player is dead, show elimination message instead of mission
+                                  if (!mission.isAlive) {
+                                    return Container(
+                                      padding: const EdgeInsets.all(20.0),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.dangerous,
+                                            size: 48,
+                                            color: Theme.of(context).colorScheme.error,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'YOU HAVE BEEN ELIMINATED',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context).colorScheme.error,
+                                              letterSpacing: 1.2,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Your hunt is over. Continue watching the game unfold.',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  
+                                  // Player is alive, show mission
                                   final targetName = _players.firstWhere(
                                     (player) => player.playerId == mission.targetId,
                                     ).userInfo?['display_name'] ?? 'Unknown';
@@ -377,7 +483,7 @@ class _GamePageState extends State<GamePage> {
                     
                               const Divider(),
 
-                              // Example of other players (simplified view)
+                              // Other players list
                               Expanded(
                                 child: _playersLoading 
                                     ? const Center(child: CircularProgressIndicator())
@@ -393,15 +499,44 @@ class _GamePageState extends State<GamePage> {
                                           
                                           final mission = missionSnapshot.data!;
                                           final currentUserId = _authService.currentUser?.id;
-                                          final targetId = mission.targetId;
                                           
-                                          // Filtra sia l'utente corrente che il suo target dalla lista degli altri giocatori
-                                          final otherPlayers = _players.where((player) => 
-                                              player.playerId != currentUserId && player.playerId != targetId
-                                          ).toList();
+                                          // Filter logic based on player status
+                                          final otherPlayers = _players.where((player) {
+                                            // Always exclude current user
+                                            if (player.playerId == currentUserId) return false;
+                                            
+                                            // If current player is alive, also exclude their target
+                                            if (mission.isAlive && player.playerId == mission.targetId) {
+                                              return false;
+                                            }
+                                            
+                                            // Include all other players
+                                            return true;
+                                          }).toList();
                                           
                                           if (otherPlayers.isEmpty) {
-                                            return const Center(child: Text('No other players in the game'));
+                                            return Center(
+                                              child: Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.people_outline,
+                                                    size: 48,
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  Text(
+                                                    mission.isAlive 
+                                                        ? 'No other players visible'
+                                                        : 'All players in the hunt',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
                                           }
                                           
                                           return ListView.builder(
@@ -415,7 +550,7 @@ class _GamePageState extends State<GamePage> {
                                                   return GamePlayerCard(
                                                     player: player,
                                                     isHost: isPlayerHost,
-                                                    onReportKill: () {
+                                                    onReportKill: mission.isAlive ? () {
                                                       _gameService.reportKill(
                                                         widget.partyCode,
                                                         _authService.currentUser!.id,
@@ -437,7 +572,7 @@ class _GamePageState extends State<GamePage> {
                                                           );
                                                         }
                                                       });
-                                                    },
+                                                    } : null, // Disable for dead players
                                                   );
                                                 },
                                               );
