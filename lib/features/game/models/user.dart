@@ -1,23 +1,23 @@
 /// Modello per rappresentare un giocatore
 class User {
-  final String id;
+  final String playerId;
   final String displayName;
 
   User({
-    required this.id,
+    required this.playerId,
     required this.displayName,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
+      playerId: json['playerId'],
       displayName: json['display_name'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'playerId': playerId,
       'display_name': displayName,
     };
   }
@@ -27,10 +27,10 @@ class User {
       identical(this, other) ||
       other is User &&
           runtimeType == other.runtimeType &&
-          id == other.id;
+          playerId == other.playerId;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => playerId.hashCode;
 
   @override
   String toString() {

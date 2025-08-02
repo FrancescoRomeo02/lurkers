@@ -116,9 +116,11 @@ class GameService {
           .eq('code', partyCode)
           .maybeSingle();
       if (response == null) {
+        _logError('isUserHostOfParty', 'Host not found for party code: $partyCode');
         return false;
       }
       return response['host_id'] == user.id;
+
     } catch (e) {
       _logError('isUserHostOfParty', e);
       return false;
@@ -270,7 +272,6 @@ class GameService {
         return [];
       }
 
-      // Optimized query using JOIN to avoid N+1 queries
       final response = await _supabase
           .from('lobby_submissions')
           .select('''
@@ -278,6 +279,7 @@ class GameService {
             profiles!inner(id, display_name, email, avatar_url)
           ''')
           .eq('party_id', partyId);
+
 
       return (response as List<dynamic>)
           .map((item) {
@@ -427,4 +429,95 @@ class GameService {
       return false;
     }
   }
+
+// Check if a player is alive
+  Future<bool> isPlayerAlive(String partyCode, String playerId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        _logError('isPlayerAlive', 'Party not found for code: $partyCode');
+        return false;
+      }
+      final response = await _supabase
+          .from('party_players')
+          .select('is_alive')
+          .eq('party_id', partyId)
+          .eq('player_id', playerId)
+          .maybeSingle();
+      if (response == null) {
+        _logError('isPlayerAlive', 'Player not found in party: $partyCode');
+        return false;
+      }
+      return response['is_alive'] as bool;
+    } catch (e) {
+      _logError('isPlayerAlive', e);
+      return false;
+    }
+  }
+
+// Perform a kill
+  Future<bool> performKill(String partyCode, String killerId, String targetId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        _logError('performKill', 'Party not found for code: $partyCode');
+        return false;
+      }
+      // Check if the killer is alive
+      final killerResponse = await isPlayerAlive(partyCode, killerId);
+      if (!killerResponse) {
+        _logError('performKill', 'Killer is not alive');
+        return false;
+      }
+
+      // Check if the target is alive
+      final targetResponse = await isPlayerAlive(partyCode, targetId);
+      if (!targetResponse) {
+        _logError('performKill', 'Target is already dead');
+        return false;
+      }
+
+      // Perform the kill by updating the target's is_alive status
+      final killResponse = await _supabase
+          .from('party_players')
+          .update({'is_alive': false})
+          .eq('party_id', partyId)
+          .eq('player_id', targetId);
+
+      // add the elimination to the eliminations table
+        await _supabase.from('elimination_events').insert({
+          'party_id': partyId,
+          'actor_id': killerId,
+          'victim_id': targetId,
+          'event_type': 'kill',
+        });
+
+      // Give to the killer the victim's mission target, item and location
+      final targetData = await _supabase
+          .from('party_players')
+          .select('mission_item, mission_location, target_id')
+          .eq('party_id', partyId)
+          .eq('player_id', targetId)
+          .maybeSingle();
+      if (targetData == null) {
+        _logError('performKill', 'Target data not found for player: $targetId');
+        return false;
+      }
+      await _supabase
+          .from('party_players')
+          .update({
+            'mission_item': targetData['mission_item'],
+            'mission_location': targetData['mission_location'],
+            'target_id': targetData['target_id'], // Transfer the target to the killer
+          })
+          .eq('party_id', partyId)
+          .eq('player_id', killerId);
+      return true;
+    } catch (e) {
+      _logError('performKill', e);
+      return false;
+    }
+  }
+
+
 }

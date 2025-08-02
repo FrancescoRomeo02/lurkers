@@ -124,7 +124,7 @@ class CurrentPlayerCard extends StatelessWidget {
                   
                   // Role
                   Text(
-                    isHost ? 'Game Master' : 'Assassin',
+                    isHost ? 'Game Master' : 'Player',
                     style: TextStyle(
                       color: isHost
                           ? Theme.of(context).colorScheme.primary
@@ -188,7 +188,7 @@ class CurrentPlayerCard extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
@@ -199,7 +199,7 @@ class CurrentPlayerCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.onSurface,
             ),

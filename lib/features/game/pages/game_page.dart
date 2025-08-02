@@ -211,7 +211,21 @@ class _GamePageState extends State<GamePage> {
                                     evidence: mission.insertItem,
                                     location: mission.insertLocation,
                                     onEliminateTarget: () {
-                                      // TODO: Implementare logica per segnalare uccisione
+                                      _gameService.performKill(
+                                        widget.partyCode,
+                                        _authService.currentUser!.id,
+                                        mission.targetId,
+                                      ).then((success) {
+                                        if (success) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Target eliminated successfully')),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Failed to eliminate target')),
+                                          );
+                                        }
+                                      });
                                     },
                                   );
                                 },
