@@ -455,68 +455,202 @@ class GameService {
     }
   }
 
-// Perform a kill
-  Future<bool> performKill(String partyCode, String killerId, String targetId) async {
+// Perform a kill (now just reports the kill, needs confirmation)
+  Future<bool> reportKill(String partyCode, String killerId, String targetId) async {
     try {
       final partyId = await getPartyIdByCode(partyCode);
       if (partyId == 0) {
-        _logError('performKill', 'Party not found for code: $partyCode');
+        _logError('reportKill', 'Party not found for code: $partyCode');
         return false;
       }
+      
       // Check if the killer is alive
-      final killerResponse = await isPlayerAlive(partyCode, killerId);
-      if (!killerResponse) {
-        _logError('performKill', 'Killer is not alive');
+      final killerAlive = await isPlayerAlive(partyCode, killerId);
+      if (!killerAlive) {
+        _logError('reportKill', 'Killer is not alive');
         return false;
       }
 
       // Check if the target is alive
-      final targetResponse = await isPlayerAlive(partyCode, targetId);
-      if (!targetResponse) {
-        _logError('performKill', 'Target is already dead');
+      final targetAlive = await isPlayerAlive(partyCode, targetId);
+      if (!targetAlive) {
+        _logError('reportKill', 'Target is already dead');
         return false;
       }
 
-      // Perform the kill by updating the target's is_alive status
-      final killResponse = await _supabase
-          .from('party_players')
-          .update({'is_alive': false})
+      // Check if there's already a pending elimination for this target
+      final existingElimination = await _supabase
+          .from('elimination_events')
+          .select('id')
           .eq('party_id', partyId)
-          .eq('player_id', targetId);
+          .eq('victim_id', targetId)
+          .eq('event_confirmed', false)
+          .maybeSingle();
 
-      // add the elimination to the eliminations table
-        await _supabase.from('elimination_events').insert({
-          'party_id': partyId,
-          'actor_id': killerId,
-          'victim_id': targetId,
-          'event_type': 'kill',
-        });
+      if (existingElimination != null) {
+        _logError('reportKill', 'There is already a pending elimination for this target');
+        return false;
+      }
 
-      // Give to the killer the victim's mission target, item and location
-      final targetData = await _supabase
+      // Create elimination event with confirmation pending
+      await _supabase.from('elimination_events').insert({
+        'party_id': partyId,
+        'actor_id': killerId,
+        'victim_id': targetId,
+        'event_type': 'kill',
+        'event_confirmed': false,
+      });
+
+      return true;
+    } catch (e) {
+      _logError('reportKill', e);
+      return false;
+    }
+  }
+
+  // Confirm elimination (victim confirms their death)
+  Future<bool> confirmElimination(String partyCode, String victimId, int eliminationEventId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        _logError('confirmElimination', 'Party not found for code: $partyCode');
+        return false;
+      }
+
+      // Get the elimination event details
+      final eliminationEvent = await _supabase
+          .from('elimination_events')
+          .select('actor_id, victim_id, event_confirmed')
+          .eq('id', eliminationEventId)
+          .eq('party_id', partyId)
+          .eq('victim_id', victimId)
+          .maybeSingle();
+
+      if (eliminationEvent == null) {
+        _logError('confirmElimination', 'Elimination event not found');
+        return false;
+      }
+
+      if (eliminationEvent['event_confirmed'] == true) {
+        _logError('confirmElimination', 'Elimination already confirmed');
+        return false;
+      }
+
+      final killerId = eliminationEvent['actor_id'];
+
+      // Get victim's current mission data before killing them
+      final victimData = await _supabase
           .from('party_players')
           .select('mission_item, mission_location, target_id')
           .eq('party_id', partyId)
-          .eq('player_id', targetId)
+          .eq('player_id', victimId)
           .maybeSingle();
-      if (targetData == null) {
-        _logError('performKill', 'Target data not found for player: $targetId');
+
+      if (victimData == null) {
+        _logError('confirmElimination', 'Victim data not found');
         return false;
       }
+
+      // Start transaction-like operations
+      // 1. Mark elimination as confirmed
+      await _supabase
+          .from('elimination_events')
+          .update({'event_confirmed': true})
+          .eq('id', eliminationEventId);
+
+      // 2. Kill the victim
+      await _supabase
+          .from('party_players')
+          .update({'is_alive': false})
+          .eq('party_id', partyId)
+          .eq('player_id', victimId);
+
+      // 3. Transfer victim's mission to killer
       await _supabase
           .from('party_players')
           .update({
-            'mission_item': targetData['mission_item'],
-            'mission_location': targetData['mission_location'],
-            'target_id': targetData['target_id'], // Transfer the target to the killer
+            'mission_item': victimData['mission_item'],
+            'mission_location': victimData['mission_location'],
+            'target_id': victimData['target_id'],
           })
           .eq('party_id', partyId)
           .eq('player_id', killerId);
+
       return true;
     } catch (e) {
-      _logError('performKill', e);
+      _logError('confirmElimination', e);
       return false;
     }
+  }
+
+  // Get pending elimination for a victim
+  Future<Map<String, dynamic>?> getPendingEliminationForVictim(String partyCode, String victimId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return null;
+      }
+
+      final response = await _supabase
+          .from('elimination_events')
+          .select('''
+            id,
+            actor_id,
+            victim_id,
+            event_type,
+            event_confirmed,
+            created_at,
+            profiles!elimination_events_actor_id_fkey(id, display_name)
+          ''')
+          .eq('party_id', partyId)
+          .eq('victim_id', victimId)
+          .eq('event_confirmed', false)
+          .maybeSingle();
+
+      if (response != null) {
+        response['killer_info'] = response['profiles'];
+      }
+
+      return response;
+    } catch (e) {
+      _logError('getPendingEliminationForVictim', e);
+      return null;
+    }
+  }
+
+  // Get all pending eliminations for a party (for debugging/admin)
+  Future<List<Map<String, dynamic>>> getPendingEliminations(String partyCode) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return [];
+      }
+
+      final response = await _supabase
+          .from('elimination_events')
+          .select('''
+            id,
+            actor_id,
+            victim_id,
+            event_type,
+            event_confirmed,
+            created_at,
+            actor_profile:profiles!elimination_events_actor_id_fkey(id, display_name),
+            victim_profile:profiles!elimination_events_victim_id_fkey(id, display_name)
+          ''')
+          .eq('party_id', partyId)
+          .eq('event_confirmed', false);
+
+      return (response as List<dynamic>).cast<Map<String, dynamic>>();
+    } catch (e) {
+      _logError('getPendingEliminations', e);
+      return [];
+    }
+  }
+
+// Legacy method - kept for backward compatibility, now calls reportKill
+  Future<bool> performKill(String partyCode, String killerId, String targetId) async {
+    return await reportKill(partyCode, killerId, targetId);
   }
 
 

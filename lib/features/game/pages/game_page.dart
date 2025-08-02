@@ -4,6 +4,7 @@ import 'package:lurkers/features/game/models/party_player.dart';
 import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/target_mission_card.dart';
 import 'package:lurkers/features/game/widgets/game_player_card.dart';
+import 'package:lurkers/features/game/widgets/pending_elimination_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 
@@ -25,9 +26,13 @@ class _GamePageState extends State<GamePage> {
   final AuthService _authService = AuthService();
   final GameService _gameService = GameService();
     
-  late RealtimeChannel _subscription;
+  late RealtimeChannel _playersSubscription;
+  late RealtimeChannel _eliminationSubscription;
   List<PartyPlayer> _players = [];
   bool _playersLoading = true;
+  
+  // Elimination system
+  Map<String, dynamic>? _pendingElimination;
 
   String? nickname;
   bool isLoading = true;
@@ -37,8 +42,9 @@ class _GamePageState extends State<GamePage> {
   void initState() {
     super.initState();
     _loadUserNickname();
-    _subscribeToPlayers();
+    _subscribeToChanges();
     _fetchPlayers();
+    _checkPendingElimination();
   }
 
   void _loadUserNickname() {
@@ -48,14 +54,50 @@ class _GamePageState extends State<GamePage> {
     });
   }
 
-  void _subscribeToPlayers() {
-    _subscription = Supabase.instance.client
-      .channel('public:party_players')
+  void _subscribeToChanges() async {
+    // Get party ID first for filtered subscriptions
+    final partyId = await _gameService.getPartyIdByCode(widget.partyCode);
+    if (partyId == 0) {
+      print('Warning: Could not get party ID for subscriptions');
+      return;
+    }
+
+    // Subscribe to party_players changes for this specific party
+    _playersSubscription = Supabase.instance.client
+      .channel('players-${widget.partyCode}')
       .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'party_players',
-          callback: (payload) => _fetchPlayers(),
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'party_id',
+            value: partyId,
+          ),
+          callback: (payload) {
+            print('Players data changed: ${payload.eventType}');
+            _fetchPlayers();
+          },
+        )
+      .subscribe();
+
+    // Subscribe to elimination_events changes for this specific party
+    _eliminationSubscription = Supabase.instance.client
+      .channel('eliminations-${widget.partyCode}')
+      .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'elimination_events',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'party_id',
+            value: partyId,
+          ),
+          callback: (payload) {
+            print('Elimination event changed: ${payload.eventType}');
+            // Always check for pending eliminations when elimination events change
+            _checkPendingElimination();
+          },
         )
       .subscribe();
   }
@@ -69,9 +111,92 @@ class _GamePageState extends State<GamePage> {
       });
   }
 
+  void _checkPendingElimination() async {
+    if (_authService.currentUser == null) return;
+    
+    try {
+      final pendingElimination = await _gameService.getPendingEliminationForVictim(
+        widget.partyCode,
+        _authService.currentUser!.id,
+      );
+      setState(() {
+        _pendingElimination = pendingElimination;
+      });
+    } catch (e) {
+      print('Error checking pending elimination: $e');
+    }
+  }
+
+  void _confirmElimination() async {
+    if (_pendingElimination == null) return;
+    
+    try {
+      final success = await _gameService.confirmElimination(
+        widget.partyCode,
+        _authService.currentUser!.id,
+        _pendingElimination!['id'],
+      );
+      
+      if (success) {
+        setState(() {
+          _pendingElimination = null;
+        });
+        // Refresh players data
+        _fetchPlayers();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Elimination confirmed. You have been eliminated from the game.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to confirm elimination. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _denyElimination() async {
+    if (_pendingElimination == null) return;
+    
+    // For now, just remove the pending elimination locally
+    // In a real implementation, you might want to send a denial to the database
+    setState(() {
+      _pendingElimination = null;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Elimination denied. The report has been dismissed.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
-    Supabase.instance.client.removeChannel(_subscription);
+    Supabase.instance.client.removeChannel(_playersSubscription);
+    Supabase.instance.client.removeChannel(_eliminationSubscription);
     super.dispose();
   }
 
@@ -176,6 +301,19 @@ class _GamePageState extends State<GamePage> {
                     
                     const SizedBox(height: 16),
 
+                    // Pending Elimination Alert
+                    if (_pendingElimination != null)
+                      Column(
+                        children: [
+                          PendingEliminationCard(
+                            eliminationData: _pendingElimination!,
+                            onConfirm: _confirmElimination,
+                            onDeny: _denyElimination,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+
                     // Players List
                     Text(
                       'Players in the Hunt',
@@ -211,18 +349,24 @@ class _GamePageState extends State<GamePage> {
                                     evidence: mission.insertItem,
                                     location: mission.insertLocation,
                                     onEliminateTarget: () {
-                                      _gameService.performKill(
+                                      _gameService.reportKill(
                                         widget.partyCode,
                                         _authService.currentUser!.id,
                                         mission.targetId,
                                       ).then((success) {
                                         if (success) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Target eliminated successfully')),
+                                            const SnackBar(
+                                              content: Text('Kill reported! Waiting for target confirmation...'),
+                                              backgroundColor: Colors.orange,
+                                            ),
                                           );
                                         } else {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Failed to eliminate target')),
+                                            const SnackBar(
+                                              content: Text('Failed to report kill. Please try again.'),
+                                              backgroundColor: Colors.red,
+                                            ),
                                           );
                                         }
                                       });
@@ -272,7 +416,27 @@ class _GamePageState extends State<GamePage> {
                                                     player: player,
                                                     isHost: isPlayerHost,
                                                     onReportKill: () {
-                                                      // TODO: Implementare logica per segnalare omicidio
+                                                      _gameService.reportKill(
+                                                        widget.partyCode,
+                                                        _authService.currentUser!.id,
+                                                        player.playerId,
+                                                      ).then((success) {
+                                                        if (success) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Kill reported for ${player.userInfo?['display_name'] ?? 'player'}! Waiting for confirmation...'),
+                                                              backgroundColor: Colors.orange,
+                                                            ),
+                                                          );
+                                                        } else {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text('Failed to report kill. Please try again.'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
+                                                      });
                                                     },
                                                   );
                                                 },
