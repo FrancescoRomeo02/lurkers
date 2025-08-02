@@ -5,6 +5,7 @@ import 'package:lurkers/features/game/services/game_service.dart';
 import 'package:lurkers/features/game/widgets/target_mission_card.dart';
 import 'package:lurkers/features/game/widgets/game_player_card.dart';
 import 'package:lurkers/features/game/widgets/pending_elimination_card.dart';
+import 'package:lurkers/features/game/pages/victory_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 
@@ -109,6 +110,57 @@ class _GamePageState extends State<GamePage> {
         _players = players;
         _playersLoading = false;
       });
+      
+      // Check victory condition after fetching players
+      _checkVictoryCondition();
+  }
+
+  void _checkVictoryCondition() async {
+    if (_authService.currentUser == null) return;
+    
+    try {
+      final hasWon = await _gameService.checkVictoryCondition(
+        widget.partyCode,
+        _authService.currentUser!.id,
+      );
+      
+      if (hasWon) {
+        // Complete the game in the database
+        await _gameService.completeGame(widget.partyCode, _authService.currentUser!.id);
+        
+        // Navigate to victory page
+        if (mounted) {
+          final currentUser = _players.firstWhere(
+            (player) => player.playerId == _authService.currentUser!.id,
+            orElse: () => PartyPlayer(
+              id: -1,
+              createdAt: DateTime.now(),
+              partyId: 0,
+              playerId: _authService.currentUser!.id,
+              isAlive: true,
+              targetId: '',
+              insertItem: '',
+              insertLocation: '',
+              userInfo: {
+                'display_name': _authService.getCurrentUserNick() ?? 'Unknown'
+              },
+            ),
+          );
+          
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => VictoryPage(
+                partyCode: widget.partyCode,
+                winnerId: _authService.currentUser!.id,
+                winnerName: currentUser.userInfo?['display_name'] ?? 'Unknown',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error checking victory condition: $e');
+    }
   }
 
   void _checkPendingElimination() async {

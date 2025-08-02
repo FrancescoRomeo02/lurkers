@@ -653,5 +653,201 @@ class GameService {
     return await reportKill(partyCode, killerId, targetId);
   }
 
+  /// Check if a player has won the game (has themselves as target)
+  Future<bool> checkVictoryCondition(String partyCode, String playerId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return false;
+      }
+
+      // First check if the game is already completed
+      final partyStatus = await _supabase
+          .from('parties')
+          .select('status')
+          .eq('id', partyId)
+          .maybeSingle();
+
+      if (partyStatus != null && partyStatus['status'] == 'completed') {
+        return false; // Game already completed
+      }
+
+      final response = await _supabase
+          .from('party_players')
+          .select('player_id, target_id, is_alive')
+          .eq('party_id', partyId)
+          .eq('player_id', playerId)
+          .eq('is_alive', true)
+          .maybeSingle();
+
+      if (response == null) {
+        return false;
+      }
+
+      // Victory condition: player has themselves as target
+      return response['target_id'] == playerId;
+    } catch (e) {
+      _logError('checkVictoryCondition', e);
+      return false;
+    }
+  }
+
+  /// Force victory for testing purposes - sets player's target to themselves
+  Future<bool> forceVictoryForTesting(String partyCode, String playerId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return false;
+      }
+
+      // Set the player's target to themselves to trigger victory
+      await _supabase
+          .from('party_players')
+          .update({'target_id': playerId})
+          .eq('party_id', partyId)
+          .eq('player_id', playerId);
+
+      return true;
+    } catch (e) {
+      _logError('forceVictoryForTesting', e);
+      return false;
+    }
+  }
+
+  /// Mark the game as completed and set the winner
+  Future<bool> completeGame(String partyCode, String winnerId) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return false;
+      }
+
+      // Update party status to completed and set the winner
+      await _supabase
+          .from('parties')
+          .update({
+            'status': 'completed',
+            'winner_id': winnerId,
+            // 'completed_at': DateTime.now().toIso8601String(), // Add this if completed_at field exists
+          })
+          .eq('id', partyId);
+
+      return true;
+    } catch (e) {
+      _logError('completeGame', e);
+      return false;
+    }
+  }
+
+  /// Get comprehensive game statistics for the victory page
+  Future<Map<String, dynamic>> getGameStatistics(String partyCode) async {
+    try {
+      final partyId = await getPartyIdByCode(partyCode);
+      if (partyId == 0) {
+        return {};
+      }
+
+      // Get party info with winner_id
+      final partyInfo = await _supabase
+          .from('parties')
+          .select('created_at, status, winner_id')
+          .eq('id', partyId)
+          .maybeSingle();
+
+      // Get all players with their stats
+      final playersResponse = await _supabase
+          .from('party_players')
+          .select('''
+            player_id,
+            is_alive,
+            created_at,
+            profiles!party_players_player_id_fkey(display_name)
+          ''')
+          .eq('party_id', partyId);
+
+      // Get elimination events to count kills
+      final eliminationsResponse = await _supabase
+          .from('elimination_events')
+          .select('actor_id, victim_id, event_confirmed')
+          .eq('party_id', partyId)
+          .eq('event_confirmed', true);
+
+      // Process player statistics
+      List<Map<String, dynamic>> playerStats = [];
+      Map<String, int> killCounts = {};
+      
+      // Count kills for each player
+      for (var elimination in eliminationsResponse) {
+        final killerId = elimination['actor_id'];
+        killCounts[killerId] = (killCounts[killerId] ?? 0) + 1;
+      }
+
+      // Build player stats
+      for (var player in playersResponse) {
+        final playerId = player['player_id'];
+        playerStats.add({
+          'playerId': playerId,
+          'displayName': player['profiles']['display_name'],
+          'isAlive': player['is_alive'],
+          'kills': killCounts[playerId] ?? 0,
+          'joinedAt': player['created_at'],
+        });
+      }
+
+      // Sort players by kills (descending) and then by alive status
+      playerStats.sort((a, b) {
+        if (a['kills'] != b['kills']) {
+          return b['kills'].compareTo(a['kills']);
+        }
+        if (a['isAlive'] != b['isAlive']) {
+          return a['isAlive'] ? -1 : 1;
+        }
+        return 0;
+      });
+
+      // Calculate game duration (simplified without completed_at)
+      String gameDuration = 'N/A';
+      if (partyInfo != null && partyInfo['created_at'] != null) {
+        final startTime = DateTime.parse(partyInfo['created_at']);
+        final currentTime = DateTime.now();
+        final duration = currentTime.difference(startTime);
+        
+        if (duration.inHours > 0) {
+          gameDuration = '${duration.inHours}h ${duration.inMinutes % 60}m';
+        } else {
+          gameDuration = '${duration.inMinutes}m';
+        }
+      }
+
+      // Get winner kills using the winner_id from the database
+      int winnerKills = 0;
+      String? winnerId;
+      if (partyInfo != null && partyInfo['winner_id'] != null) {
+        winnerId = partyInfo['winner_id'];
+        winnerKills = killCounts[winnerId] ?? 0;
+      } else {
+        // Fallback: find the player with most kills who is still alive
+        for (var player in playerStats) {
+          if (player['isAlive'] && player['kills'] > winnerKills) {
+            winnerKills = player['kills'];
+            winnerId = player['playerId'];
+          }
+        }
+      }
+
+      return {
+        'totalPlayers': playersResponse.length,
+        'totalEliminations': eliminationsResponse.length,
+        'gameDuration': gameDuration,
+        'winnerKills': winnerKills,
+        'playerStats': playerStats,
+        'partyInfo': partyInfo,
+        'winnerId': winnerId,
+      };
+    } catch (e) {
+      _logError('getGameStatistics', e);
+      return {};
+    }
+  }
 
 }
